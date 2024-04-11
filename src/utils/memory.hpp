@@ -30,6 +30,7 @@ namespace utils::mem {
 
         // Check if the string is printable
         char *ptr = (char *) address;
+        if (!*ptr) return false;
         while (*ptr) {
             if (*ptr < 32 && *ptr != '\n' && *ptr != '\r') {
                 return false;
