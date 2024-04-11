@@ -80,10 +80,10 @@ namespace utils::geode {
                 "- Working Directory: {}\n"
                 "- Loader Version: {} (Geometry Dash v{})\n"
                 "- Mods Installed: {} (Loaded: {})"
-                "{}",
+                "- Problems: {}{}",
                 wd, getLoaderVersion(), GEODE_STR(GEODE_GD_VERSION),
-                getModCount(), getLoadedModCount(),
-                problems.empty() ? "" : fmt::format("\n\n- Problems: {}\n{}", problems.size(), readProblems(problems))
+                getModCount(), getLoadedModCount(), problems.size(),
+                problems.empty() ? "" : fmt::format("\n{}", readProblems(problems))
         );
 
         return message;
