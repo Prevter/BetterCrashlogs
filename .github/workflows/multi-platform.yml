@@ -27,6 +27,7 @@ jobs:
         uses: geode-sdk/build-geode-mod@main
         with:
           combine: true
+          ccache-variant: '' # GitHub action doesn't like sccache for some reason
           target: ${{ matrix.config.target }}
 
   package:
