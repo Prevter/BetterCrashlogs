@@ -1,0 +1,206 @@
+#include "ui.hpp"
+
+#include "../analyzer/analyzer.hpp"
+#include "../utils/utils.hpp"
+#include "../utils/geode-util.hpp"
+
+#include <imgui.h>
+
+namespace ui {
+
+    static ImFont* mainFont = nullptr;
+    static ImFont* titleFont = nullptr;
+
+    static std::unordered_map<const char*, ImU32> colorMap = {
+        {"primary", IM_COL32(183, 148, 246, 255)}, /* purple */
+        {"string", IM_COL32(61, 146, 61, 255)}, /* green */
+        {"pointer", IM_COL32(248, 132, 120, 255)}, /* red */
+        {"white", IM_COL32(255, 255, 255, 255)}, /* white */
+        {"address", IM_COL32(122, 160, 141, 255)}, /* cyan */
+        {"function", IM_COL32(245, 86, 119, 255)} /* pink */
+    };
+
+    const char* pickRandomQuote() {
+        static int quoteIndex = utils::randInt(0, RANDOM_MESSAGES_COUNT);
+        return RANDOM_MESSAGES[quoteIndex];
+    }
+
+    void applyStyles() {
+        auto &style = ImGui::GetStyle();
+        style.ChildRounding = 0;
+        style.GrabRounding = 0;
+        style.FrameRounding = 0;
+        style.PopupRounding = 0;
+        style.ScrollbarRounding = 0;
+        style.TabRounding = 0;
+        style.WindowRounding = 0;
+        style.FramePadding = {4, 4};
+
+        style.WindowTitleAlign = {0.5, 0.5};
+
+        ImVec4 *colors = ImGui::GetStyle().Colors;
+        // Updated to use IM_COL32 for more precise colors and to add table colors (1.80 feature)
+        colors[ImGuiCol_Text] = ImColor{IM_COL32(0xeb, 0xdb, 0xb2, 0xFF)};
+        colors[ImGuiCol_TextDisabled] = ImColor{IM_COL32(0x92, 0x83, 0x74, 0xFF)};
+        colors[ImGuiCol_WindowBg] = ImColor{IM_COL32(0x1d, 0x20, 0x21, 0xF0)};
+        colors[ImGuiCol_ChildBg] = ImColor{IM_COL32(0x1d, 0x20, 0x21, 0xFF)};
+        colors[ImGuiCol_PopupBg] = ImColor{IM_COL32(0x1d, 0x20, 0x21, 0xF0)};
+        colors[ImGuiCol_Border] = ImColor{IM_COL32(0x2d, 0x30, 0x31, 0xFF)};
+        colors[ImGuiCol_BorderShadow] = ImColor{0};
+        colors[ImGuiCol_FrameBg] = ImColor{IM_COL32(0x3c, 0x38, 0x36, 0x90)};
+        colors[ImGuiCol_FrameBgHovered] = ImColor{IM_COL32(0x50, 0x49, 0x45, 0xFF)};
+        colors[ImGuiCol_FrameBgActive] = ImColor{IM_COL32(0x66, 0x5c, 0x54, 0xA8)};
+        colors[ImGuiCol_TitleBg] = ImColor{IM_COL32(0xd6, 0x5d, 0x0e, 0xFF)};
+        colors[ImGuiCol_TitleBgActive] = ImColor{IM_COL32(0xfe, 0x80, 0x19, 0xFF)};
+        colors[ImGuiCol_TitleBgCollapsed] = ImColor{IM_COL32(0xd6, 0x5d, 0x0e, 0x9C)};
+        colors[ImGuiCol_MenuBarBg] = ImColor{IM_COL32(0x28, 0x28, 0x28, 0xF0)};
+        colors[ImGuiCol_ScrollbarBg] = ImColor{IM_COL32(0x00, 0x00, 0x00, 0x28)};
+        colors[ImGuiCol_ScrollbarGrab] = ImColor{IM_COL32(0x3c, 0x38, 0x36, 0xFF)};
+        colors[ImGuiCol_ScrollbarGrabHovered] = ImColor{IM_COL32(0x50, 0x49, 0x45, 0xFF)};
+        colors[ImGuiCol_ScrollbarGrabActive] = ImColor{IM_COL32(0x66, 0x5c, 0x54, 0xFF)};
+        colors[ImGuiCol_CheckMark] = ImColor{IM_COL32(0xd6, 0x5d, 0x0e, 0x9E)};
+        colors[ImGuiCol_SliderGrab] = ImColor{IM_COL32(0xd6, 0x5d, 0x0e, 0x70)};
+        colors[ImGuiCol_SliderGrabActive] = ImColor{IM_COL32(0xfe, 0x80, 0x19, 0xFF)};
+        colors[ImGuiCol_Button] = ImColor{IM_COL32(0xd6, 0x5d, 0x0e, 0x66)};
+        colors[ImGuiCol_ButtonHovered] = ImColor{IM_COL32(0xfe, 0x80, 0x19, 0x9E)};
+        colors[ImGuiCol_ButtonActive] = ImColor{IM_COL32(0xfe, 0x80, 0x19, 0xFF)};
+        colors[ImGuiCol_Header] = ImColor{IM_COL32(0xd6, 0x5d, 0x0e, 0.4F)};
+        colors[ImGuiCol_HeaderHovered] = ImColor{IM_COL32(0xfe, 0x80, 0x19, 0xCC)};
+        colors[ImGuiCol_HeaderActive] = ImColor{IM_COL32(0xfe, 0x80, 0x19, 0xFF)};
+        colors[ImGuiCol_Separator] = ImColor{IM_COL32(0x66, 0x5c, 0x54, 0.50f)};
+        colors[ImGuiCol_SeparatorHovered] = ImColor{IM_COL32(0x50, 0x49, 0x45, 0.78f)};
+        colors[ImGuiCol_SeparatorActive] = ImColor{IM_COL32(0x66, 0x5c, 0x54, 0xFF)};
+        colors[ImGuiCol_ResizeGrip] = ImColor{IM_COL32(0xd6, 0x5d, 0x0e, 0x40)};
+        colors[ImGuiCol_ResizeGripHovered] = ImColor{IM_COL32(0xfe, 0x80, 0x19, 0xAA)};
+        colors[ImGuiCol_ResizeGripActive] = ImColor{IM_COL32(0xfe, 0x80, 0x19, 0xF2)};
+        colors[ImGuiCol_Tab] = ImColor{IM_COL32(0xd6, 0x5d, 0x0e, 0xD8)};
+        colors[ImGuiCol_TabHovered] = ImColor{IM_COL32(0xfe, 0x80, 0x19, 0xCC)};
+        colors[ImGuiCol_TabActive] = ImColor{IM_COL32(0xfe, 0x80, 0x19, 0xFF)};
+        colors[ImGuiCol_TabUnfocused] = ImColor{IM_COL32(0x1d, 0x20, 0x21, 0.97f)};
+        colors[ImGuiCol_TabUnfocusedActive] = ImColor{IM_COL32(0x1d, 0x20, 0x21, 0xFF)};
+        colors[ImGuiCol_PlotLines] = ImColor{IM_COL32(0xd6, 0x5d, 0x0e, 0xFF)};
+        colors[ImGuiCol_PlotLinesHovered] = ImColor{IM_COL32(0xfe, 0x80, 0x19, 0xFF)};
+        colors[ImGuiCol_PlotHistogram] = ImColor{IM_COL32(0x98, 0x97, 0x1a, 0xFF)};
+        colors[ImGuiCol_PlotHistogramHovered] = ImColor{IM_COL32(0xb8, 0xbb, 0x26, 0xFF)};
+        colors[ImGuiCol_TextSelectedBg] = ImColor{IM_COL32(0x45, 0x85, 0x88, 0x59)};
+        colors[ImGuiCol_DragDropTarget] = ImColor{IM_COL32(0x98, 0x97, 0x1a, 0.90f)};
+        colors[ImGuiCol_TableHeaderBg] = ImColor{IM_COL32(0x38, 0x3c, 0x36, 0xFF)};
+        colors[ImGuiCol_TableBorderStrong] = ImColor{IM_COL32(0x28, 0x28, 0x28, 0xFF)};
+        colors[ImGuiCol_TableBorderLight] = ImColor{IM_COL32(0x38, 0x3c, 0x36, 0xFF)};
+        colors[ImGuiCol_TableRowBg] = ImColor{IM_COL32(0x1d, 0x20, 0x21, 0xFF)};
+        colors[ImGuiCol_TableRowBgAlt] = ImColor{IM_COL32(0x28, 0x28, 0x28, 0xFF)};
+        colors[ImGuiCol_TextSelectedBg] = ImColor{IM_COL32(0x45, 0x85, 0x88, 0xF0)};
+        colors[ImGuiCol_NavHighlight] = ImColor{IM_COL32(0x83, 0xa5, 0x98, 0xFF)};
+        colors[ImGuiCol_NavWindowingHighlight] = ImColor{IM_COL32(0xfb, 0xf1, 0xc7, 0xB2)};
+        colors[ImGuiCol_NavWindowingDimBg] = ImColor{IM_COL32(0x7c, 0x6f, 0x64, 0x33)};
+        colors[ImGuiCol_ModalWindowDimBg] = ImColor{IM_COL32(0x1d, 0x20, 0x21, 0x59)};
+    }
+
+    void informationWindow() {
+        ImGui::Begin("Exception Information");
+
+        ImGui::PushFont(titleFont);
+        ImGui::TextWrapped("%s", pickRandomQuote());
+        ImGui::PopFont();
+
+        ImGui::TextWrapped("%s", analyzer::getExceptionMessage().c_str());
+
+        ImGui::End();
+    }
+
+    void metadataWindow() {
+        ImGui::Begin("Geode Information");
+
+        ImGui::TextWrapped("%s", utils::geode::getLoaderMetadataMessage().c_str());
+
+        ImGui::End();
+    }
+
+    void registersWindow() {
+        ImGui::Begin("Register States");
+
+        auto registers = analyzer::getRegisterStates();
+
+        // Create a table with the register states
+        ImGui::BeginTable("registers", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit);
+        ImGui::TableSetupColumn("Name");
+        ImGui::TableSetupColumn("Value");
+        ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableHeadersRow();
+
+        for (const auto& reg : registers) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
+            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+            ImGui::Text("%s", reg.name.c_str());
+            ImGui::PopStyleColor();
+
+            ImGui::TableNextColumn();
+
+            if (reg.type != analyzer::ValueType::Unknown) {
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["pointer"]);
+            } else {
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+            }
+            ImGui::Text("%08X", reg.value);
+            ImGui::PopStyleColor();
+
+            ImGui::TableNextColumn();
+
+            switch (reg.type) {
+                case analyzer::ValueType::Pointer:
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
+                    break;
+                case analyzer::ValueType::Function:
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["function"]);
+                    break;
+                case analyzer::ValueType::String:
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
+                    break;
+                default:
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                    break;
+            }
+            ImGui::Text("%s", reg.description.c_str());
+            ImGui::PopStyleColor();
+        }
+
+        ImGui::EndTable();
+
+        // Flags table
+        ImGui::BeginTable("flags", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX);
+        ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableHeadersRow();
+
+        std::map<std::string, bool> context = analyzer::getCpuFlags();
+        int i = 0;
+        for (const auto& [flag, value] : context) {
+            ImGui::TableNextColumn();
+
+            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+            ImGui::Text("%s", flag.c_str());
+            ImGui::PopStyleColor();
+
+            ImGui::TableNextColumn();
+
+            ImGui::PushStyleColor(ImGuiCol_Text, value ? colorMap["string"] : colorMap["white"]);
+            ImGui::Text("%s", value ? "1" : "0");
+            ImGui::PopStyleColor();
+
+            if (++i % 3 == 0 && i < context.size()) {
+                ImGui::TableNextRow();
+            }
+        }
+
+        ImGui::EndTable();
+
+        ImGui::End();
+    }
+
+}

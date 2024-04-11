@@ -1,0 +1,7 @@
+[submodule "thirdparty/glfw"]
+	path = thirdparty/glfw
+	url = https://github.com/glfw/glfw
+[submodule "thirdparty/imgui"]
+	path = thirdparty/imgui
+	url = https://github.com/prevter/imgui
+	branch = docking
