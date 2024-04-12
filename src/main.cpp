@@ -22,17 +22,21 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
             "== Exception Information ==\n"
             "{}\n\n"
             "== Stack Trace ==\n"
-            "Not implemented yet.\n\n"
+            "{}\n\n"
             "== Register States ==\n"
             "{}\n\n"
             "== Installed Mods ==\n"
+            "{}\n\n"
+            "== Stack Allocations ==\n"
             "{}",
             utils::getCurrentDateTime(),
             ui::pickRandomQuote(),
             utils::geode::getLoaderMetadataMessage(),
             analyzer::getExceptionMessage(),
+            "Not implemented yet.", // analyzer::getStackTraceMessage(),
             analyzer::getRegisterStateMessage(),
-            utils::geode::getModListMessage()
+            utils::geode::getModListMessage(),
+            analyzer::getStackAllocationsMessage()
     );
 
     // Save the crash report
@@ -112,7 +116,6 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         ui::modsWindow();
         ui::stackWindow();
 
-        ImGui::ShowDemoWindow();
     });
 
     window.init();

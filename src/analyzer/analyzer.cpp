@@ -17,6 +17,7 @@ namespace analyzer {
     static std::vector<RegisterState> registerStates;
     static std::map<std::string, bool> cpuFlags;
     static std::vector<StackLine> stackData;
+    static std::string stackAllocationsMessage;
 
     void analyze(LPEXCEPTION_POINTERS info) {
         exceptionInfo = info;
@@ -75,6 +76,7 @@ namespace analyzer {
         registerStates.clear();
         cpuFlags.clear();
         stackData.clear();
+        stackAllocationsMessage.clear();
     }
 
     void reload() {
@@ -272,6 +274,25 @@ namespace analyzer {
         }
 
         return stackData;
+    }
+
+    const std::string &getStackAllocationsMessage() {
+        if (!stackAllocationsMessage.empty())
+            return stackAllocationsMessage;
+
+        auto data = getStackData();
+        for (const auto &stackLine: data) {
+            stackAllocationsMessage += fmt::format(
+                    "- 0x{:X}: {:08X} ({})\n",
+                    stackLine.address, stackLine.value, stackLine.description
+            );
+        }
+
+        if (!stackAllocationsMessage.empty()) {
+            stackAllocationsMessage.pop_back();
+        }
+
+        return stackAllocationsMessage;
     }
 
 }

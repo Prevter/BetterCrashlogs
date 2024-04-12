@@ -90,4 +90,7 @@ namespace analyzer {
     /// @note This function should be called after the analyze function.
     /// @return The stack data that can be displayed to the user.
     const std::vector<StackLine>& getStackData();
+
+    /// @brief Get the information about the stack allocations.
+    const std::string& getStackAllocationsMessage();
 }
