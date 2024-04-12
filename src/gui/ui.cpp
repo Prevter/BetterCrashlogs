@@ -125,7 +125,7 @@ namespace ui {
         ImGui::BeginTable("registers", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit);
         ImGui::TableSetupColumn("Name");
         ImGui::TableSetupColumn("Value");
-        ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableHeadersRow();
 
         for (const auto& reg : registers) {
@@ -196,6 +196,60 @@ namespace ui {
             if (++i % 3 == 0 && i < context.size()) {
                 ImGui::TableNextRow();
             }
+        }
+
+        ImGui::EndTable();
+
+        ImGui::End();
+    }
+
+    void modsWindow() {
+        ImGui::Begin("Installed Mods");
+
+        auto mods = utils::geode::getModList();
+
+        // Create a table with the installed mods
+        ImGui::BeginTable("mods", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX);
+        ImGui::TableSetupColumn("Version");
+        ImGui::TableSetupColumn("Mod ID", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableHeadersRow();
+
+        for (const auto& mod: mods) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
+            std::string statusStr;
+            std::string tooltipStr;
+
+            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+            ImGui::Text("%s", mod.version.c_str());
+            ImGui::PopStyleColor();
+
+
+#define STATUS_CASE(status, color, text, tooltip)              \
+    case utils::geode::ModStatus::status:                      \
+        ImGui::PushStyleColor(ImGuiCol_Text, colorMap[color]); \
+        statusStr = text;                                      \
+        tooltipStr = tooltip;                                  \
+        break;
+
+            switch (mod.status) {
+                STATUS_CASE(Disabled, "white", " ", "The mod is disabled.")
+                STATUS_CASE(IsCurrentlyLoading, "pointer", "o", "The mod is currently loading.\nThis means the crash may be related to this mod.")
+                STATUS_CASE(Enabled, "string", "x", "The mod is enabled.")
+                STATUS_CASE(HasProblems, "address", "!", "The mod has problems.")
+                STATUS_CASE(ShouldLoad, "function", "~", "The mod is expected to be loaded.")
+            }
+
+#undef STATUS_CASE
+
+            ImGui::TableNextColumn();
+            ImGui::Text("%s", mod.id.c_str());
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("%s", tooltipStr.c_str());
+            }
+            ImGui::PopStyleColor();
         }
 
         ImGui::EndTable();

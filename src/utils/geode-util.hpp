@@ -17,4 +17,27 @@ namespace utils::geode {
     /// @brief Get the path to the crashlogs folder
     ghc::filesystem::path getCrashlogsPath();
 
+    enum class ModStatus {
+        Disabled, // ' '
+        IsCurrentlyLoading, // 'o'
+        Enabled, // 'x'
+        HasProblems, // '!'
+        ShouldLoad, // '~'
+    };
+
+    struct ModInfo {
+        std::string name;
+        std::string id;
+        std::string version;
+        std::string developer;
+        ModStatus status;
+        ::geode::Mod* mod;
+    };
+
+    /// @brief Get installed mods list
+    const std::vector<ModInfo>& getModList();
+
+    /// @brief Get installed/loaded mods list message
+    const std::string& getModListMessage();
+
 }

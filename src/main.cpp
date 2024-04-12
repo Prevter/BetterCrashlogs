@@ -26,12 +26,13 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
             "== Register States ==\n"
             "{}\n\n"
             "== Installed Mods ==\n"
-            "Not implemented yet.",
+            "{}",
             utils::getCurrentDateTime(),
             ui::pickRandomQuote(),
             utils::geode::getLoaderMetadataMessage(),
             analyzer::getExceptionMessage(),
-            analyzer::getRegisterStateMessage()
+            analyzer::getRegisterStateMessage(),
+            utils::geode::getModListMessage()
     );
 
     // Save the crash report
@@ -108,6 +109,7 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         ui::informationWindow();
         ui::metadataWindow();
         ui::registersWindow();
+        ui::modsWindow();
     });
 
     window.init();

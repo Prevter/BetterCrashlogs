@@ -79,7 +79,7 @@ namespace utils::geode {
         message = fmt::format(
                 "- Working Directory: {}\n"
                 "- Loader Version: {} (Geometry Dash v{})\n"
-                "- Mods Installed: {} (Loaded: {})"
+                "- Installed Mods: {} (Loaded: {})\n"
                 "- Problems: {}{}",
                 wd, getLoaderVersion(), GEODE_STR(GEODE_GD_VERSION),
                 getModCount(), getLoadedModCount(), problems.size(),
@@ -106,6 +106,97 @@ namespace utils::geode {
 
     ghc::filesystem::path getCrashlogsPath() {
         return ::geode::dirs::getCrashlogsDir();
+    }
+
+    const std::vector<ModInfo> &getModList() {
+        static std::vector<ModInfo> mods;
+        if (!mods.empty()) {
+            return mods;
+        }
+
+        auto allMods = ::geode::Loader::get()->getAllMods();
+        mods.reserve(allMods.size());
+
+        // Sort the mods by id
+        std::sort(allMods.begin(), allMods.end(), [](const ::geode::Mod *a, const ::geode::Mod *b) {
+            return a->getMetadata().getID() < b->getMetadata().getID();
+        });
+
+        for (auto &mod: allMods) {
+            auto metadata = mod->getMetadata();
+            auto developers = metadata.getDevelopers();
+            std::string developer;
+            // Combine all developers into one string
+            for (auto it = developers.begin(); it != developers.end(); it++) {
+                developer += *it;
+                if (std::next(it) != developers.end()) {
+                    developer += ", ";
+                }
+            }
+
+            ModStatus status = ModStatus::Disabled;
+            /*if (mod->isCurrentlyLoading()) {
+                status = ModStatus::IsCurrentlyLoading;
+            } else */if (mod->isEnabled()) {
+                status = ModStatus::Enabled;
+            }
+//            else if (mod->hasProblems()) {
+//                status = ModStatus::HasProblems;
+//            }
+            else if (mod->shouldLoad()) {
+                status = ModStatus::ShouldLoad;
+            }
+
+            mods.push_back({
+                metadata.getName(),
+                metadata.getID(),
+                metadata.getVersion().toString(),
+                developer,
+                status,
+                mod
+            });
+        }
+
+        return mods;
+    }
+
+    const std::string &getModListMessage() {
+        static std::string message;
+        if (!message.empty()) {
+            return message;
+        }
+
+        auto mods = getModList();
+        std::string result;
+
+        for (auto &mod: mods) {
+            char status;
+            switch (mod.status) {
+                case ModStatus::Disabled:
+                    status = ' ';
+                    break;
+                case ModStatus::IsCurrentlyLoading:
+                    status = 'o';
+                    break;
+                case ModStatus::Enabled:
+                    status = 'x';
+                    break;
+                case ModStatus::HasProblems:
+                    status = '!';
+                    break;
+                case ModStatus::ShouldLoad:
+                    status = '~';
+                    break;
+            }
+            result += fmt::format("{} | [{}] {}\n", status, mod.version, mod.id);
+        }
+
+        if (!result.empty()) {
+            result.pop_back();
+        }
+
+        message = result;
+        return message;
     }
 
 }
