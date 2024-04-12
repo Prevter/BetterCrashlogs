@@ -21,7 +21,7 @@ namespace utils::mem {
 
         // Check if the string is null-terminated
         __try {
-            if (strlen((const char*)address) >= 1024) {
+            if ((const char*)address == nullptr || strlen((const char*)address) >= 1024) {
                 return false;
             }
         } __except(EXCEPTION_EXECUTE_HANDLER) {
@@ -30,7 +30,6 @@ namespace utils::mem {
 
         // Check if the string is printable
         char *ptr = (char *) address;
-        if (!*ptr) return false;
         while (*ptr) {
             if (*ptr < 32 && *ptr != '\n' && *ptr != '\r') {
                 return false;
@@ -69,6 +68,18 @@ namespace utils::mem {
         if (stripPath)
             return std::filesystem::path(buffer).filename().string();
         return buffer;
+    }
+
+    /// @brief Get the address of a function by backtracking to the first "int 3" instruction.
+    inline uintptr_t findMethodStart(uintptr_t address, uintptr_t maxOffset = 0x1000) {
+        uintptr_t offset = 0;
+        while (offset < maxOffset) {
+            if (*reinterpret_cast<uint8_t *>(address - offset) == 0xCC) {
+                return address - offset + 1;
+            }
+            offset++;
+        }
+        return 0;
     }
 
 }

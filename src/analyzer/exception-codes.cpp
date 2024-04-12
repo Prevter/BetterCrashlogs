@@ -25,6 +25,8 @@ namespace analyzer::exceptions {
             CASE(EXCEPTION_PRIV_INSTRUCTION);
             CASE(EXCEPTION_SINGLE_STEP);
             CASE(EXCEPTION_STACK_OVERFLOW);
+            CASE(EXCEPTION_GUARD_PAGE);
+            CASE(EXCEPTION_INVALID_HANDLE);
             default:
                 return "Unknown exception";
         }
@@ -135,9 +137,9 @@ namespace analyzer::exceptions {
         auto illegalInstructionCode = *(uint16_t *) illegalInstructionAddress;
 
         return fmt::format(
-            "- Illegal Instruction Address: 0x{:X}\n"
-            "- Illegal Instruction Code: 0x{:X}",
-            (uintptr_t) illegalInstructionAddress, illegalInstructionCode
+                "- Illegal Instruction Address: 0x{:X}\n"
+                "- Illegal Instruction Code: 0x{:X}",
+                (uintptr_t) illegalInstructionAddress, illegalInstructionCode
         );
     }
 

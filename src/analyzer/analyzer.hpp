@@ -11,8 +11,8 @@ namespace analyzer {
         uintptr_t baseAddress;
         uintptr_t size;
 
-        bool contains(uintptr_t address) const {
-            return address >= baseAddress && address < (baseAddress + size);
+        [[nodiscard]] bool contains(void* address) const {
+            return address >= (void*) baseAddress && address < (void*) (baseAddress + size);
         }
     };
 
@@ -86,7 +86,7 @@ namespace analyzer {
         std::string description;
     };
 
-    /// @brief Get the stack allocated data. (Latest 20 entries)
+    /// @brief Get the stack allocated data. (Latest 32 entries)
     /// @note This function should be called after the analyze function.
     /// @return The stack data that can be displayed to the user.
     const std::vector<StackLine>& getStackData();

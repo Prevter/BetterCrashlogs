@@ -144,15 +144,15 @@ namespace analyzer {
             }
         }
 
-//        // Check if it's the main module
-//        if (module == GetModuleHandle(nullptr)) {
-//            auto gdName = getGeometryDashMethodName((uintptr_t) address);
-//            if (!gdName.empty()) {
-//                return fmt::format("{} -> {}", moduleName, gdName);
-//            }
-//        }
+        // Check if it's the main module
+        if (module == GetModuleHandle(nullptr)) {
+            // TODO: Parse broma syntax to get the "GeometryDash.exe" function name
+        }
 
-        return fmt::format("{}+0x{:X}", moduleName, moduleOffset);
+        auto methodStart = utils::mem::findMethodStart(address);
+        auto methodOffset = (uintptr_t) address - methodStart;
+        methodStart -= (uintptr_t)module; // Get the offset from the module base
+        return fmt::format("{}+0x{:X} [<{:X}>+{:x}]", moduleName, moduleOffset, methodStart, methodOffset);
     }
 
     std::string getString(uintptr_t address) {
