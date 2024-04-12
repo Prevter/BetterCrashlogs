@@ -33,7 +33,7 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
             ui::pickRandomQuote(),
             utils::geode::getLoaderMetadataMessage(),
             analyzer::getExceptionMessage(),
-            "Not implemented yet.", // analyzer::getStackTraceMessage(),
+            analyzer::getStackTraceMessage(),
             analyzer::getRegisterStateMessage(),
             utils::geode::getModListMessage(),
             analyzer::getStackAllocationsMessage()
@@ -86,27 +86,42 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                 ImGui::SetTooltip("Refresh the crash information (reload all debug symbols).");
             }
 
-            if (ImGui::MenuItem("Ignore Exception")) {
+            if (ImGui::MenuItem("Step Over")) {
                 geode::log::info("Attempting to continue the execution...");
                 result = EXCEPTION_CONTINUE_EXECUTION;
 
-                // Skip the instruction that caused the exception
-                auto context = ExceptionInfo->ContextRecord;
+                // Skip the instruction
+                ExceptionInfo->ContextRecord->Eip += 1;
 
-                // Check if the exception was caused by a breakpoint
-                if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT) {
-                    context->Eip++;
-                } else {
-                    context->Eip += 2;
-                }
-
-                analyzer::cleanup();
                 window.close();
             }
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("Attempt to continue the execution of the game.\n"
                                   "In most cases, this will just crash the game again.");
             }
+
+            // This is kinda broken right now but eh?
+            auto &stackTrace = analyzer::getStackTrace();
+            if (stackTrace.size() > 1) {
+                if (ImGui::MenuItem("Step Out")) {
+                    result = EXCEPTION_CONTINUE_SEARCH;
+
+                    // Get the address of the latest function call
+                    auto returnAddress = stackTrace[1].address;
+                    geode::log::info("Attempting to step out of the function at 0x{:X}...", returnAddress);
+
+                    // Restore the context to the caller
+                    ExceptionInfo->ContextRecord->Eip = returnAddress;
+                    ExceptionInfo->ContextRecord->Esp = stackTrace[1].framePointer;
+
+                    window.close();
+                }
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("Attempt to step out of the function that caused the exception."
+                                      "In most cases, this will just crash the game again.");
+                }
+            }
+
         }
 
         // Windows
@@ -115,12 +130,14 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         ui::registersWindow();
         ui::modsWindow();
         ui::stackWindow();
+        ui::stackTraceWindow();
 
     });
 
     window.init();
     window.run();
 
+    analyzer::cleanup();
     return result;
 }
 

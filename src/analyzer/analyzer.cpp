@@ -18,6 +18,8 @@ namespace analyzer {
     static std::map<std::string, bool> cpuFlags;
     static std::vector<StackLine> stackData;
     static std::string stackAllocationsMessage;
+    static std::vector<StackTraceLine> stackTrace;
+    static std::string stackTraceMessage;
 
     void analyze(LPEXCEPTION_POINTERS info) {
         exceptionInfo = info;
@@ -77,6 +79,8 @@ namespace analyzer {
         cpuFlags.clear();
         stackData.clear();
         stackAllocationsMessage.clear();
+        stackTrace.clear();
+        stackTraceMessage.clear();
     }
 
     void reload() {
@@ -260,13 +264,13 @@ namespace analyzer {
         return cpuFlags;
     }
 
-    const std::vector<StackLine>& getStackData() {
+    const std::vector<StackLine> &getStackData() {
         if (!stackData.empty())
             return stackData;
 
         CONTEXT context = *exceptionInfo->ContextRecord;
         uintptr_t stackPointer = context.Esp;
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 32; i++) {
             uintptr_t address = stackPointer + i * sizeof(uintptr_t);
             uintptr_t value = *(uintptr_t *) address;
             auto valueResult = getValue(value);
@@ -293,6 +297,98 @@ namespace analyzer {
         }
 
         return stackAllocationsMessage;
+    }
+
+    ModuleInfo *getModuleInfo(void *address) {
+        for (auto &module: modules) {
+            if (module.contains(address)) {
+                return &module;
+            }
+        }
+        return nullptr;
+    }
+
+    const std::vector<StackTraceLine> &getStackTrace() {
+        if (!stackTrace.empty())
+            return stackTrace;
+
+        STACKFRAME64 stackFrame;
+        memset(&stackFrame, 0, sizeof(STACKFRAME64));
+
+        auto ctx = exceptionInfo->ContextRecord;
+
+        DWORD machineType = IMAGE_FILE_MACHINE_I386;
+        stackFrame.AddrPC.Offset = ctx->Eip;
+        stackFrame.AddrPC.Mode = AddrModeFlat;
+        stackFrame.AddrFrame.Offset = ctx->Ebp;
+        stackFrame.AddrFrame.Mode = AddrModeFlat;
+        stackFrame.AddrStack.Offset = ctx->Esp;
+        stackFrame.AddrStack.Mode = AddrModeFlat;
+
+        HANDLE process = GetCurrentProcess();
+        HANDLE thread = GetCurrentThread();
+
+        while (StackWalk64(machineType, process, thread, &stackFrame, ctx, nullptr, SymFunctionTableAccess64,
+                           SymGetModuleBase64, nullptr)) {
+            if (stackFrame.AddrPC.Offset == 0) {
+                break;
+            }
+            StackTraceLine line{};
+            line.address = stackFrame.AddrPC.Offset;
+            line.framePointer = stackFrame.AddrFrame.Offset;
+            auto module = getModuleInfo((void*) stackFrame.AddrPC.Offset);
+            geode::log::info("Stack: 0x{:X} | Module: {}", stackFrame.AddrPC.Offset, module == nullptr ? "Unknown" : module->name);
+            if (module) {
+                line.module = *module;
+                line.moduleOffset = stackFrame.AddrPC.Offset - (uintptr_t) module->handle;
+                line.function = getFunctionName(stackFrame.AddrPC.Offset, true);
+                line.functionAddress = utils::mem::findMethodStart(stackFrame.AddrPC.Offset);
+                line.functionOffset = stackFrame.AddrPC.Offset - line.functionAddress;
+            }
+
+            if (debugSymbolsLoaded) {
+                DWORD displacement;
+                IMAGEHLP_LINE64 lineInfo;
+                lineInfo.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+                if (SymGetLineFromAddr64(process, stackFrame.AddrPC.Offset, &displacement, &lineInfo)) {
+                    line.file = lineInfo.FileName;
+                    line.line = lineInfo.LineNumber;
+                }
+            }
+
+            stackTrace.push_back(line);
+        }
+
+        return stackTrace;
+    }
+
+    const std::string &getStackTraceMessage() {
+        if (!stackTraceMessage.empty())
+            return stackTraceMessage;
+
+        auto data = getStackTrace();
+
+        for (const auto &stackLine: data) {
+            if (stackLine.function.empty()) {
+                stackTraceMessage += fmt::format("- 0x{:08X}\n", stackLine.address);
+                continue;
+            }
+
+            stackTraceMessage += fmt::format(
+                    "- {} + 0x{:x} ({})\n{}",
+                    stackLine.module.name, stackLine.moduleOffset,
+                    stackLine.function.empty() ?
+                    fmt::format("<0x{:X}>+0x{:X}", stackLine.functionAddress, stackLine.functionOffset) :
+                    stackLine.function, stackLine.file.empty() ?
+                                        "" : fmt::format("└ {}:{}\n", stackLine.file, stackLine.line)
+            );
+        }
+
+        if (!stackTraceMessage.empty()) {
+            stackTraceMessage.pop_back();
+        }
+
+        return stackTraceMessage;
     }
 
 }

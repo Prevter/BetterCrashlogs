@@ -93,4 +93,26 @@ namespace analyzer {
 
     /// @brief Get the information about the stack allocations.
     const std::string& getStackAllocationsMessage();
+
+    struct StackTraceLine {
+        uintptr_t address;
+        ModuleInfo module;
+        uintptr_t moduleOffset;
+        std::string function;
+        uintptr_t functionAddress;
+        uintptr_t functionOffset;
+        std::string file;
+        uint32_t line;
+        uintptr_t framePointer;
+    };
+
+    /// @brief Get the stack trace.
+    /// @note This function should be called after the analyze function.
+    /// @return The stack trace that can be displayed to the user.
+    const std::vector<StackTraceLine>& getStackTrace();
+
+    /// @brief Get the stack trace message.
+    /// @note This function should be called after the analyze function.
+    /// @return The stack trace message that can be displayed to the user.
+    const std::string& getStackTraceMessage();
 }

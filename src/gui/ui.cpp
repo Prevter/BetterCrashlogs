@@ -323,4 +323,89 @@ namespace ui {
         ImGui::End();
     }
 
+    void stackTraceWindow() {
+        ImGui::Begin("Stack Trace", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
+
+        auto stackTrace = analyzer::getStackTrace();
+
+#define COPY_POPUP(value, id)                       \
+        if (ImGui::BeginPopupContextItem(id)) {   \
+            if (ImGui::MenuItem("Copy")) {      \
+                ImGui::SetClipboardText(value); \
+            }                                   \
+            ImGui::EndPopup();                  \
+        }
+
+        // Create a table with the stack trace
+        for (const auto &line: stackTrace) {
+            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+            if (line.function.empty()) {
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                ImGui::Text("- 0x%08X", line.address);
+                COPY_POPUP(fmt::format("0x{:X}", line.address).c_str(), fmt::format("address_{:X}", line.address).c_str());
+                ImGui::PopStyleColor();
+            } else if (ImGui::TreeNode(line.function.c_str())) {
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                ImGui::Text("Address");
+                ImGui::PopStyleColor();
+
+                ImGui::SameLine();
+
+                auto addressStr = fmt::format("{}+0x{:X} (0x{:X})", line.module.name, line.moduleOffset, line.address);
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                ImGui::Text("%s", addressStr.c_str());
+                ImGui::PopStyleColor();
+
+                COPY_POPUP(addressStr.c_str(), addressStr.c_str());
+
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                ImGui::Text("Function");
+                ImGui::PopStyleColor();
+
+                ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["function"]);
+                if (!line.function.empty()) {
+                    ImGui::Text("%s", line.function.c_str());
+                    COPY_POPUP(line.function.c_str(), line.function.c_str());
+                } else {
+                    ImGui::Text("<0x%08X>+0x%X", line.functionAddress, line.functionOffset);
+                }
+                ImGui::PopStyleColor();
+
+                if (!line.file.empty()) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                    ImGui::Text("File");
+                    ImGui::PopStyleColor();
+
+                    ImGui::SameLine();
+
+                    auto lineStr = fmt::format("{}:{}", line.file, line.line);
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
+                    ImGui::Text("%s", lineStr.c_str());
+                    ImGui::PopStyleColor();
+
+                    COPY_POPUP(lineStr.c_str(), lineStr.c_str());
+                }
+
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                ImGui::Text("Frame Pointer");
+                ImGui::PopStyleColor();
+
+                ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
+                ImGui::Text("0x%08X", line.framePointer);
+                ImGui::PopStyleColor();
+
+                COPY_POPUP(fmt::format("0x{:X}", line.framePointer).c_str(), fmt::format("frame_{:X}", line.framePointer).c_str());
+
+                ImGui::TreePop();
+            }
+            ImGui::PopStyleColor();
+        }
+
+        ImGui::End();
+    }
+
 }
