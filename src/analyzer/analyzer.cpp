@@ -16,6 +16,7 @@ namespace analyzer {
     static std::string exceptionMessage;
     static std::vector<RegisterState> registerStates;
     static std::map<std::string, bool> cpuFlags;
+    static std::vector<StackLine> stackData;
 
     void analyze(LPEXCEPTION_POINTERS info) {
         exceptionInfo = info;
@@ -73,6 +74,7 @@ namespace analyzer {
         exceptionMessage.clear();
         registerStates.clear();
         cpuFlags.clear();
+        stackData.clear();
     }
 
     void reload() {
@@ -254,6 +256,22 @@ namespace analyzer {
         };
 
         return cpuFlags;
+    }
+
+    const std::vector<StackLine>& getStackData() {
+        if (!stackData.empty())
+            return stackData;
+
+        CONTEXT context = *exceptionInfo->ContextRecord;
+        uintptr_t stackPointer = context.Esp;
+        for (int i = 0; i < 20; i++) {
+            uintptr_t address = stackPointer + i * sizeof(uintptr_t);
+            uintptr_t value = *(uintptr_t *) address;
+            auto valueResult = getValue(value);
+            stackData.push_back({address, value, valueResult.first, valueResult.second});
+        }
+
+        return stackData;
     }
 
 }

@@ -110,6 +110,9 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         ui::metadataWindow();
         ui::registersWindow();
         ui::modsWindow();
+        ui::stackWindow();
+
+        ImGui::ShowDemoWindow();
     });
 
     window.init();

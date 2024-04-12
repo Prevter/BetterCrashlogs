@@ -79,4 +79,15 @@ namespace analyzer {
     /// @return The register state message that can be displayed to the user.
     const std::string& getRegisterStateMessage();
 
+    struct StackLine {
+        uintptr_t address;
+        uintptr_t value;
+        ValueType type;
+        std::string description;
+    };
+
+    /// @brief Get the stack allocated data. (Latest 20 entries)
+    /// @note This function should be called after the analyze function.
+    /// @return The stack data that can be displayed to the user.
+    const std::vector<StackLine>& getStackData();
 }

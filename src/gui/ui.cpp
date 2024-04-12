@@ -8,19 +8,19 @@
 
 namespace ui {
 
-    static ImFont* mainFont = nullptr;
-    static ImFont* titleFont = nullptr;
+    static ImFont *mainFont = nullptr;
+    static ImFont *titleFont = nullptr;
 
-    static std::unordered_map<const char*, ImU32> colorMap = {
-        {"primary", IM_COL32(183, 148, 246, 255)}, /* purple */
-        {"string", IM_COL32(61, 146, 61, 255)}, /* green */
-        {"pointer", IM_COL32(248, 132, 120, 255)}, /* red */
-        {"white", IM_COL32(255, 255, 255, 255)}, /* white */
-        {"address", IM_COL32(122, 160, 141, 255)}, /* cyan */
-        {"function", IM_COL32(245, 86, 119, 255)} /* pink */
+    static std::unordered_map<const char *, ImU32> colorMap = {
+            {"primary",  IM_COL32(183, 148, 246, 255)}, /* purple */
+            {"string",   IM_COL32(61, 146, 61, 255)}, /* green */
+            {"pointer",  IM_COL32(248, 132, 120, 255)}, /* red */
+            {"white",    IM_COL32(255, 255, 255, 255)}, /* white */
+            {"address",  IM_COL32(122, 160, 141, 255)}, /* cyan */
+            {"function", IM_COL32(245, 86, 119, 255)} /* pink */
     };
 
-    const char* pickRandomQuote() {
+    const char *pickRandomQuote() {
         static int quoteIndex = utils::randInt(0, RANDOM_MESSAGES_COUNT);
         return RANDOM_MESSAGES[quoteIndex];
     }
@@ -122,83 +122,89 @@ namespace ui {
         auto registers = analyzer::getRegisterStates();
 
         // Create a table with the register states
-        ImGui::BeginTable("registers", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit);
-        ImGui::TableSetupColumn("Name");
-        ImGui::TableSetupColumn("Value");
-        ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableHeadersRow();
+        ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit |
+                                ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_ScrollX;
+        ImVec2 size = ImVec2(0, 11 * ImGui::GetTextLineHeightWithSpacing());
+        if (ImGui::BeginTable("registers", 3, flags, size)) {
+            ImGui::TableSetupColumn("Name");
+            ImGui::TableSetupColumn("Value");
+            ImGui::TableSetupColumn("Description");
+            ImGui::TableHeadersRow();
 
-        for (const auto& reg : registers) {
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
+            for (const auto &reg: registers) {
+                ImGui::TableNextColumn();
 
-            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
-            ImGui::Text("%s", reg.name.c_str());
-            ImGui::PopStyleColor();
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                ImGui::Text("%s", reg.name.c_str());
+                ImGui::PopStyleColor();
 
-            ImGui::TableNextColumn();
+                ImGui::TableNextColumn();
 
-            if (reg.type != analyzer::ValueType::Unknown) {
-                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["pointer"]);
-            } else {
-                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
-            }
-            ImGui::Text("%08X", reg.value);
-            ImGui::PopStyleColor();
-
-            ImGui::TableNextColumn();
-
-            switch (reg.type) {
-                case analyzer::ValueType::Pointer:
-                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
-                    break;
-                case analyzer::ValueType::Function:
-                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["function"]);
-                    break;
-                case analyzer::ValueType::String:
-                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
-                    break;
-                default:
+                if (reg.type != analyzer::ValueType::Unknown) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["pointer"]);
+                } else {
                     ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
-                    break;
-            }
-            ImGui::Text("%s", reg.description.c_str());
-            ImGui::PopStyleColor();
-        }
+                }
+                ImGui::Text("%08X", reg.value);
+                ImGui::PopStyleColor();
 
-        ImGui::EndTable();
+                ImGui::TableNextColumn();
+
+                switch (reg.type) {
+                    case analyzer::ValueType::Pointer:
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
+                        break;
+                    case analyzer::ValueType::Function:
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["function"]);
+                        break;
+                    case analyzer::ValueType::String:
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
+                        break;
+                    default:
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                        break;
+                }
+                ImGui::Text("%s", reg.description.c_str());
+                ImGui::PopStyleColor();
+            }
+
+            ImGui::EndTable();
+        }
 
         // Flags table
-        ImGui::BeginTable("flags", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX);
-        ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableHeadersRow();
+        if (ImGui::BeginTable("flags", 6,
+                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit |
+                              ImGuiTableFlags_NoHostExtendX)) {
+            ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableHeadersRow();
 
-        std::map<std::string, bool> context = analyzer::getCpuFlags();
-        int i = 0;
-        for (const auto& [flag, value] : context) {
-            ImGui::TableNextColumn();
+            auto context = analyzer::getCpuFlags();
+            int i = 0;
+            for (const auto &[flag, value]: context) {
+                ImGui::TableNextColumn();
 
-            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
-            ImGui::Text("%s", flag.c_str());
-            ImGui::PopStyleColor();
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                ImGui::Text("%s", flag.c_str());
+                ImGui::PopStyleColor();
 
-            ImGui::TableNextColumn();
+                ImGui::TableNextColumn();
 
-            ImGui::PushStyleColor(ImGuiCol_Text, value ? colorMap["string"] : colorMap["white"]);
-            ImGui::Text("%s", value ? "1" : "0");
-            ImGui::PopStyleColor();
+                ImGui::PushStyleColor(ImGuiCol_Text, value ? colorMap["string"] : colorMap["white"]);
+                ImGui::Text("%s", value ? "1" : "0");
+                ImGui::PopStyleColor();
 
-            if (++i % 3 == 0 && i < context.size()) {
-                ImGui::TableNextRow();
+                if (++i % 3 == 0 && i < context.size()) {
+                    ImGui::TableNextRow();
+                }
             }
-        }
 
-        ImGui::EndTable();
+            ImGui::EndTable();
+        }
 
         ImGui::End();
     }
@@ -210,12 +216,14 @@ namespace ui {
 
         // Create a table with the installed mods
         ImGui::BeginTable("mods", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
-                ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX);
+                                     ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX |
+                                     ImGuiTableFlags_NoHostExtendY);
         ImGui::TableSetupColumn("Version");
-        ImGui::TableSetupColumn("Mod ID", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Mod ID");
         ImGui::TableHeadersRow();
 
-        for (const auto& mod: mods) {
+        int i = 0;
+        for (const auto &mod: mods) {
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
 
@@ -236,7 +244,8 @@ namespace ui {
 
             switch (mod.status) {
                 STATUS_CASE(Disabled, "white", " ", "The mod is disabled.")
-                STATUS_CASE(IsCurrentlyLoading, "pointer", "o", "The mod is currently loading.\nThis means the crash may be related to this mod.")
+                STATUS_CASE(IsCurrentlyLoading, "pointer", "o",
+                            "The mod is currently loading.\nThis means the crash may be related to this mod.")
                 STATUS_CASE(Enabled, "string", "x", "The mod is enabled.")
                 STATUS_CASE(HasProblems, "address", "!", "The mod has problems.")
                 STATUS_CASE(ShouldLoad, "function", "~", "The mod is expected to be loaded.")
@@ -249,6 +258,63 @@ namespace ui {
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("%s", tooltipStr.c_str());
             }
+            ImGui::PopStyleColor();
+        }
+
+        ImGui::EndTable();
+
+        ImGui::End();
+    }
+
+    void stackWindow() {
+        ImGui::Begin("Stack Allocations");
+
+        auto stackAlloc = analyzer::getStackData();
+
+        // Create a table with the stack trace
+        ImGui::BeginTable("stack", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit |
+                                      ImGuiTableFlags_ScrollX | ImGuiTableFlags_NoHostExtendY);
+        ImGui::TableSetupColumn("Address");
+        ImGui::TableSetupColumn("Value");
+        ImGui::TableSetupColumn("Description");
+        ImGui::TableHeadersRow();
+
+        int i = 0;
+        for (const auto &line: stackAlloc) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
+            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+            ImGui::Text("%08X", line.address);
+            ImGui::PopStyleColor();
+
+            ImGui::TableNextColumn();
+
+            if (line.type != analyzer::ValueType::Unknown) {
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["pointer"]);
+            } else {
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+            }
+            ImGui::Text("%08X", line.value);
+            ImGui::PopStyleColor();
+
+            ImGui::TableNextColumn();
+
+            switch (line.type) {
+                case analyzer::ValueType::Pointer:
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
+                    break;
+                case analyzer::ValueType::Function:
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["function"]);
+                    break;
+                case analyzer::ValueType::String:
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
+                    break;
+                default:
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                    break;
+            }
+            ImGui::Text("%s", line.description.c_str());
             ImGui::PopStyleColor();
         }
 
