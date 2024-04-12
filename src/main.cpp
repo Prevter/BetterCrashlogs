@@ -153,6 +153,14 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
 }
 
 $execute {
+    // Copy "imgui.ini" from the resources directory to the config directory if it doesn't exist
+    auto resourcesDir = geode::Mod::get()->getResourcesDir();
+    auto configDir = geode::Mod::get()->getConfigDir();
+    auto iniPath = (configDir / "imgui.ini");
+    if (!ghc::filesystem::exists(iniPath)) {
+        ghc::filesystem::copy_file(resourcesDir / "imgui.ini", iniPath);
+    }
+
     AddVectoredExceptionHandler(0, [](PEXCEPTION_POINTERS ExceptionInfo) -> LONG {
         auto exceptionCode = ExceptionInfo->ExceptionRecord->ExceptionCode;
         if (exceptionCode == EXCEPTION_BREAKPOINT) {
