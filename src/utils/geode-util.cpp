@@ -79,9 +79,12 @@ namespace utils::geode {
         message = fmt::format(
                 "- Working Directory: {}\n"
                 "- Loader Version: {} (Geometry Dash v{})\n"
+                // "- Loader Commit: {}\n"
+                // "- Bindings Commit: {}\n"
                 "- Installed Mods: {} (Loaded: {})\n"
                 "- Problems: {}{}",
                 wd, getLoaderVersion(), GEODE_STR(GEODE_GD_VERSION),
+                // about::getLoaderCommitHash(), about::getBindingsCommitHash(),
                 getModCount(), getLoadedModCount(), problems.size(),
                 problems.empty() ? "" : fmt::format("\n{}", readProblems(problems))
         );
