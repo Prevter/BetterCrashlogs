@@ -341,7 +341,7 @@ namespace analyzer {
             if (module) {
                 line.module = *module;
                 line.moduleOffset = stackFrame.AddrPC.Offset - (uintptr_t) module->handle;
-                line.function = getFunctionName(stackFrame.AddrPC.Offset, true);
+                line.function = getFunctionName(stackFrame.AddrPC.Offset);
                 line.functionAddress = utils::mem::findMethodStart(stackFrame.AddrPC.Offset);
                 line.functionOffset = stackFrame.AddrPC.Offset - line.functionAddress;
             }

@@ -6,16 +6,10 @@
 #include "gui/ui.hpp"
 #include "utils/geode-util.hpp"
 #include "utils/utils.hpp"
+#include "analyzer/exception-codes.hpp"
 
-LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
-    // Play a Windows error sound
-    MessageBeep(MB_ICONERROR);
-
-    // Prepare the crash information
-    analyzer::analyze(ExceptionInfo);
-
-    // Create the crash report
-    auto crashReport = fmt::format(
+std::string getCrashReport() {
+    return fmt::format(
             "{}\n{}\n\n"
             "== Geode Information ==\n"
             "{}\n\n"
@@ -38,12 +32,23 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
             utils::geode::getModListMessage(),
             analyzer::getStackAllocationsMessage()
     );
+}
+
+
+LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
+    // Play a Windows error sound
+    MessageBeep(MB_ICONERROR);
+
+    // Prepare the crash information
+    analyzer::analyze(ExceptionInfo);
 
     // Save the crash report
     static bool saved = false;
     static ghc::filesystem::path crashReportPath;
     if (!saved) {
-        geode::log::error("An exception occurred! Saving crash information...");
+        // Create the crash report
+        auto crashReport = getCrashReport();
+        geode::log::error("Saving crash information...");
         saved = true;
         crashReportPath = utils::geode::getCrashlogsPath() / fmt::format("{}.txt", utils::getCurrentDateTime(true));
         ghc::filesystem::create_directories(crashReportPath.parent_path());
@@ -72,11 +77,17 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         // Top-bar
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::MenuItem("Copy Crashlog")) {
-                ImGui::SetClipboardText(crashReport.c_str());
+                ImGui::SetClipboardText(getCrashReport().c_str());
             }
 
             if (ImGui::MenuItem("Open Crashlogs Folder")) {
-                ShellExecuteW(nullptr, L"open", L"explorer.exe", (L"/select," + crashReportPath.wstring()).c_str(), nullptr, SW_SHOWNORMAL);
+                ShellExecuteW(nullptr, L"open", L"explorer.exe", (L"/select," + crashReportPath.wstring()).c_str(),
+                              nullptr, SW_SHOWNORMAL);
+            }
+
+            if (ImGui::MenuItem("Restart Game")) {
+                geode::utils::game::restart();
+                window.close();
             }
 
             if (ImGui::MenuItem("Reload Analyzer")) {
@@ -143,7 +154,17 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
 
 $execute {
     AddVectoredExceptionHandler(0, [](PEXCEPTION_POINTERS ExceptionInfo) -> LONG {
-        SetUnhandledExceptionFilter(HandleCrash);
+        auto exceptionCode = ExceptionInfo->ExceptionRecord->ExceptionCode;
+        if (exceptionCode == EXCEPTION_BREAKPOINT) {
+            return HandleCrash(ExceptionInfo);
+        } else if (exceptionCode == 0x406D1388) { // Set thread name
+            return EXCEPTION_CONTINUE_SEARCH;
+        } else {
+            geode::log::debug("Got an exception: {} (0x{:X})",
+                              analyzer::exceptions::getName(ExceptionInfo->ExceptionRecord->ExceptionCode),
+                              ExceptionInfo->ExceptionRecord->ExceptionCode);
+            SetUnhandledExceptionFilter(HandleCrash);
+        }
         return EXCEPTION_CONTINUE_SEARCH;
     });
     SetUnhandledExceptionFilter(HandleCrash);
