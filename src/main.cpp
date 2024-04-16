@@ -34,6 +34,13 @@ std::string getCrashReport() {
     );
 }
 
+__declspec(naked) void stepOutOfFunction() {
+    __asm {
+            mov esp, ebp
+            pop ebp
+            ret
+    }
+}
 
 LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
     // Play a Windows error sound
@@ -69,8 +76,9 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
     gui::ImGuiWindow window([]() {
         auto &io = ImGui::GetIO();
         io.IniFilename = iniPath.c_str();
-        ui::mainFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 14.0f);
-        ui::titleFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 22.0f);
+        auto characterRanges = io.Fonts->GetGlyphRangesCyrillic();
+        ui::mainFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 14.0f, nullptr, characterRanges);
+        ui::titleFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 22.0f, nullptr, characterRanges);
         io.FontDefault = ui::mainFont;
         ui::applyStyles();
     }, [&]() {
@@ -117,18 +125,13 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                 if (ImGui::MenuItem("Step Out")) {
                     result = EXCEPTION_CONTINUE_SEARCH;
 
-                    // Get the address of the latest function call
-                    auto returnAddress = stackTrace[1].address;
-                    geode::log::info("Attempting to step out of the function at 0x{:X}...", returnAddress);
-
                     // Restore the context to the caller
-                    ExceptionInfo->ContextRecord->Eip = returnAddress;
-                    ExceptionInfo->ContextRecord->Esp = stackTrace[1].framePointer;
+                    ExceptionInfo->ContextRecord->Eip = reinterpret_cast<DWORD>(&stepOutOfFunction);
 
                     window.close();
                 }
                 if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("Attempt to step out of the function that caused the exception."
+                    ImGui::SetTooltip("Attempt to step out of the function that caused the exception.\n"
                                       "In most cases, this will just crash the game again.");
                 }
             }
