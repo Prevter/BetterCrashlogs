@@ -355,7 +355,6 @@ namespace analyzer {
             line.address = stackFrame.AddrPC.Offset;
             line.framePointer = stackFrame.AddrFrame.Offset;
             auto module = getModuleInfo((void*) stackFrame.AddrPC.Offset);
-            geode::log::info("Stack: 0x{:X} | Module: {}", stackFrame.AddrPC.Offset, module == nullptr ? "Unknown" : module->name);
             if (module) {
                 line.module = *module;
                 line.moduleOffset = stackFrame.AddrPC.Offset - (uintptr_t) module->handle;

@@ -9,5 +9,7 @@
 	"resources": {
 		"files": ["resources/*"]
 	},
+	"tags": ["Utility", "Developer"],
+	"repository": "https://github.com/Prevter/BetterCrashlogs",
 	"early-load": true
 }

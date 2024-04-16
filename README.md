@@ -8,8 +8,6 @@
    </p>
 </div>
 
-> Note: This mod is still work in progress!
-
 ![image](resources/screenshot.png)
 
 ## Features
@@ -25,8 +23,8 @@
 - [x] Ability to continue execution (may crash again)
 - [x] Motivational quotes (like in Minecraft)
 - [x] Base game method names (no more GeometryDash.exe+0x123456)
-- [ ] Fetch .pdb files from mod's GitHub repository (if available)
-- [ ] Basic disassembly view (using Zydis)
 
 ## TODO
+- [ ] Fetch .pdb files from mod's GitHub repository (if available)
+- [ ] Basic disassembly view (using Zydis)
 - [ ] Add a settings menu to configure the theme/font size
