@@ -168,9 +168,9 @@ $execute {
         } else if (exceptionCode == 0x406D1388) { // Set thread name
             return EXCEPTION_CONTINUE_SEARCH;
         } else {
-            geode::log::debug("Got an exception: {} (0x{:X})",
-                              analyzer::exceptions::getName(ExceptionInfo->ExceptionRecord->ExceptionCode),
-                              ExceptionInfo->ExceptionRecord->ExceptionCode);
+//            geode::log::debug("Got an exception: {} (0x{:X})",
+//                              analyzer::exceptions::getName(ExceptionInfo->ExceptionRecord->ExceptionCode),
+//                              ExceptionInfo->ExceptionRecord->ExceptionCode);
             SetUnhandledExceptionFilter(HandleCrash);
         }
         return EXCEPTION_CONTINUE_SEARCH;
