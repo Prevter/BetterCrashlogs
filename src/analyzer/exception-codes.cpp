@@ -27,6 +27,7 @@ namespace analyzer::exceptions {
             CASE(EXCEPTION_STACK_OVERFLOW);
             CASE(EXCEPTION_GUARD_PAGE);
             CASE(EXCEPTION_INVALID_HANDLE);
+            CASE(EH_EXCEPTION_NUMBER);
             default:
                 return "Unknown exception";
         }
@@ -143,11 +144,74 @@ namespace analyzer::exceptions {
         );
     }
 
+    template <typename T, typename U>
+    static std::add_const_t<std::decay_t<T>> rebaseAndCast(intptr_t base, U value) {
+        // U value -> const T* (base+value)
+        return reinterpret_cast<std::add_const_t<std::decay_t<T>>>(base + (ptrdiff_t)(value));
+    }
+
+    std::string cppExceptionHandler(LPEXCEPTION_POINTERS exceptionInfo) {
+        bool isStdException = false;
+        auto *exceptionRecord = exceptionInfo->ExceptionRecord;
+        auto exceptionObject = exceptionRecord->ExceptionInformation[1];
+
+        intptr_t imageBase = exceptionRecord->NumberParameters >= 4 ? static_cast<intptr_t>(exceptionRecord->ExceptionInformation[3]) : 0;
+        auto* throwInfo = reinterpret_cast<_MSVC_ThrowInfo*>(exceptionRecord->ExceptionInformation[2]);
+        std::stringstream stream;
+        if (!throwInfo || !throwInfo->pCatchableTypeArray) {
+            stream << "C++ exception: <no SEH data available about the thrown exception>\n";
+        } else {
+            auto* catchableTypeArray = rebaseAndCast<_MSVC_CatchableTypeArray*>(imageBase, throwInfo->pCatchableTypeArray);
+            auto ctaSize = catchableTypeArray->nCatchableTypes;
+            const char* targetName = nullptr;
+
+            for (int i = 0; i < ctaSize; i++) {
+                auto* catchableType = rebaseAndCast<_MSVC_CatchableType*>(imageBase, catchableTypeArray->arrayOfCatchableTypes[i]);
+                auto* ctDescriptor = rebaseAndCast<_MSVC_TypeDescriptor*>(imageBase, catchableType->pType);
+                const char* classname = ctDescriptor->name;
+
+                if (i == 0) {
+                    targetName = classname;
+                }
+
+                if (strcmp(classname, ".?AVexception@std@@") == 0) {
+                    isStdException = true;
+                    break;
+                }
+            }
+
+            // demangle the name of the thrown object
+            std::string demangledName;
+
+            if (!targetName || targetName[0] == '\0' || targetName[1] == '\0') {
+                demangledName = "<Unknown type>";
+            } else {
+                char demangledBuf[256];
+                size_t written = UnDecorateSymbolName(targetName + 1, demangledBuf, 256, UNDNAME_NO_ARGUMENTS);
+                if (written == 0) {
+                    demangledName = "<Unknown type>";
+                } else {
+                    demangledName = std::string(demangledBuf, demangledBuf + written);
+                }
+            }
+
+            if (isStdException) {
+                auto* excObject = reinterpret_cast<std::exception*>(exceptionObject);
+                stream << "C++ Exception: " << demangledName << "(\"" << excObject->what() << "\")" << "\n";
+            } else {
+                stream << "C++ Exception: type '" << demangledName << "'\n";
+            }
+        }
+
+        return stream.str();
+    }
+
     std::string getExtraInfo(DWORD exceptionCode, LPEXCEPTION_POINTERS exceptionInfo) {
 #define CASE(code, name) case code: return name##Handler(exceptionInfo)
         switch (exceptionCode) {
             CASE(EXCEPTION_ACCESS_VIOLATION, accessViolation);
             CASE(EXCEPTION_ILLEGAL_INSTRUCTION, illegalInstruction);
+            CASE(EH_EXCEPTION_NUMBER, cppException);
             default:
                 return "";
         }

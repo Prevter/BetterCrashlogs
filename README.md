@@ -29,5 +29,4 @@
 - [ ] Basic disassembly view (using Zydis)
 
 ## TODO
-- [ ] Parse C++ exceptions
 - [ ] Add a settings menu to configure the theme/font size
