@@ -9,6 +9,8 @@
 #include <DbgHelp.h>
 #include "ehdata-structs.hpp"
 
+#define EXCEPTION_SET_THREAD_NAME 0x406D1388
+
 namespace analyzer::exceptions {
 
     /// @brief Convert an exception code to its name.

@@ -35,10 +35,11 @@ std::string getCrashReport() {
 }
 
 __declspec(naked) void stepOutOfFunction() {
+    // I don't know what I'm doing, just hoping this works lol
     __asm {
-            mov esp, ebp
-            pop ebp
-            ret
+        mov esp, ebp
+        pop ebp
+        ret
     }
 }
 
@@ -81,6 +82,8 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         ui::titleFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 22.0f, nullptr, characterRanges);
         io.FontDefault = ui::mainFont;
         ui::applyStyles();
+
+        io.MouseWheelFriction = 5.5f;
     }, [&]() {
         // Top-bar
         if (ImGui::BeginMainMenuBar()) {
@@ -136,6 +139,8 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                 }
             }
 
+
+            ImGui::EndMainMenuBar();
         }
 
         // Windows
@@ -157,26 +162,24 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
 
 $execute {
     // Copy "imgui.ini" from the resources directory to the config directory if it doesn't exist
-    auto resourcesDir = geode::Mod::get()->getResourcesDir();
-    auto configDir = geode::Mod::get()->getConfigDir();
+    auto resourcesDir = utils::geode::getResourcesPath();
+    auto configDir = utils::geode::getConfigPath();
     auto iniPath = (configDir / "imgui.ini");
-    if (!ghc::filesystem::exists(iniPath)) {
-        ghc::filesystem::copy_file(resourcesDir / "imgui.ini", iniPath);
+    if (!std::filesystem::exists(iniPath)) {
+        std::filesystem::copy(resourcesDir / "imgui.ini", iniPath);
     }
 
     AddVectoredExceptionHandler(0, [](PEXCEPTION_POINTERS ExceptionInfo) -> LONG {
         auto exceptionCode = ExceptionInfo->ExceptionRecord->ExceptionCode;
-        if (exceptionCode == EXCEPTION_BREAKPOINT) {
-            return HandleCrash(ExceptionInfo);
-        } else if (exceptionCode == 0x406D1388) { // Set thread name
-            return EXCEPTION_CONTINUE_SEARCH;
-        } else {
-//            geode::log::debug("Got an exception: {} (0x{:X})",
-//                              analyzer::exceptions::getName(ExceptionInfo->ExceptionRecord->ExceptionCode),
-//                              ExceptionInfo->ExceptionRecord->ExceptionCode);
-            SetUnhandledExceptionFilter(HandleCrash);
+        switch (exceptionCode) {
+            case EXCEPTION_BREAKPOINT:
+                return HandleCrash(ExceptionInfo);
+            case EXCEPTION_SET_THREAD_NAME:
+                return EXCEPTION_CONTINUE_SEARCH;
+            default:
+                SetUnhandledExceptionFilter(HandleCrash);
+                return EXCEPTION_CONTINUE_SEARCH;
         }
-        return EXCEPTION_CONTINUE_SEARCH;
     });
     SetUnhandledExceptionFilter(HandleCrash);
 }

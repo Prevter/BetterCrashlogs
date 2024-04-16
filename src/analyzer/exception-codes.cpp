@@ -159,7 +159,7 @@ namespace analyzer::exceptions {
         auto* throwInfo = reinterpret_cast<_MSVC_ThrowInfo*>(exceptionRecord->ExceptionInformation[2]);
         std::stringstream stream;
         if (!throwInfo || !throwInfo->pCatchableTypeArray) {
-            stream << "C++ exception: <no SEH data available about the thrown exception>\n";
+            stream << "C++ exception: <no SEH data available about the thrown exception>";
         } else {
             auto* catchableTypeArray = rebaseAndCast<_MSVC_CatchableTypeArray*>(imageBase, throwInfo->pCatchableTypeArray);
             auto ctaSize = catchableTypeArray->nCatchableTypes;
@@ -197,9 +197,9 @@ namespace analyzer::exceptions {
 
             if (isStdException) {
                 auto* excObject = reinterpret_cast<std::exception*>(exceptionObject);
-                stream << "C++ Exception: " << demangledName << "(\"" << excObject->what() << "\")" << "\n";
+                stream << "C++ Exception: " << demangledName << "(\"" << excObject->what() << "\")" << "";
             } else {
-                stream << "C++ Exception: type '" << demangledName << "'\n";
+                stream << "C++ Exception: type '" << demangledName << "'";
             }
         }
 
