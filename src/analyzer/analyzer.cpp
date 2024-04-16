@@ -5,7 +5,7 @@
 #include "../utils/utils.hpp"
 #include "../utils/geode-util.hpp"
 
-#pragma comment(lib, "DbgHelp")
+#pragma comment(lib, "dbghelp")
 
 namespace analyzer {
 

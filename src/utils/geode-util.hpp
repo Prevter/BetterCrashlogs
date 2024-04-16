@@ -28,7 +28,13 @@ namespace utils::geode {
     uint32_t getEnabledModCount();
 
     /// @brief Get the path to the crashlogs folder
-    ghc::filesystem::path getCrashlogsPath();
+    std::filesystem::path getCrashlogsPath();
+
+    /// @brief Get the path to the mod resources folder
+    std::filesystem::path getResourcesPath();
+
+    /// @brief Get the path to the mod config folder
+    std::filesystem::path getConfigPath();
 
     enum class ModStatus {
         Disabled, // ' '

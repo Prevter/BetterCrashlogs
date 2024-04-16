@@ -51,22 +51,22 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
 
     // Save the crash report
     static bool saved = false;
-    static ghc::filesystem::path crashReportPath;
+    static std::filesystem::path crashReportPath;
     if (!saved) {
         // Create the crash report
         auto crashReport = getCrashReport();
         geode::log::error("Saving crash information...");
         saved = true;
         crashReportPath = utils::geode::getCrashlogsPath() / fmt::format("{}.txt", utils::getCurrentDateTime(true));
-        ghc::filesystem::create_directories(crashReportPath.parent_path());
-        ghc::filesystem::ofstream crashReportFile(crashReportPath);
+        std::filesystem::create_directories(crashReportPath.parent_path());
+        std::ofstream crashReportFile(crashReportPath);
         crashReportFile << crashReport;
         crashReportFile.close();
     }
 
     // Set up the paths
-    static auto resourcesDir = geode::Mod::get()->getResourcesDir();
-    static auto configDir = geode::Mod::get()->getConfigDir();
+    static auto resourcesDir = utils::geode::getResourcesPath();
+    static auto configDir = utils::geode::getConfigPath();
     static const auto iniPath = (configDir / "imgui.ini").string();
     static const auto fontPath = (resourcesDir / "FantasqueSansMono.ttf").string();
 

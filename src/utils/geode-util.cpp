@@ -114,8 +114,16 @@ namespace utils::geode {
         });
     }
 
-    ghc::filesystem::path getCrashlogsPath() {
-        return ::geode::dirs::getCrashlogsDir();
+    std::filesystem::path getCrashlogsPath() {
+        return static_cast<std::filesystem::path::string_type &&>(::geode::dirs::getCrashlogsDir());
+    }
+
+    std::filesystem::path getResourcesPath() {
+        return static_cast<std::filesystem::path::string_type &&>(::geode::Mod::get()->getResourcesDir());
+    }
+
+    std::filesystem::path getConfigPath() {
+        return static_cast<std::filesystem::path::string_type &&>(::geode::Mod::get()->getConfigDir());
     }
 
     const std::vector<ModInfo> &getModList() {
@@ -213,8 +221,8 @@ namespace utils::geode {
             return functions;
         }
 
-        auto codegenPath = ::geode::Mod::get()->getResourcesDir() / "CodegenData.txt";
-        if (!ghc::filesystem::exists(codegenPath)) {
+        auto codegenPath = getResourcesPath() / "CodegenData.txt";
+        if (!std::filesystem::exists(codegenPath)) {
             return functions;
         }
 
