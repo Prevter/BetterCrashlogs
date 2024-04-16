@@ -37,9 +37,9 @@ std::string getCrashReport() {
 __declspec(naked) void stepOutOfFunction() {
     // I don't know what I'm doing, just hoping this works lol
     __asm {
-        mov esp, ebp
-        pop ebp
-        ret
+            mov esp, ebp
+            pop ebp
+            ret
     }
 }
 
@@ -47,29 +47,29 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
     // Play a Windows error sound
     MessageBeep(MB_ICONERROR);
 
-    // Prepare the crash information
+    // Set up the paths
+    static auto resourcesDir = utils::geode::getResourcesPath();
+    static auto configDir = utils::geode::getConfigPath();
+    static auto crashReportDir = utils::geode::getCrashlogsPath();
+    static const auto iniPath = (configDir / "imgui.ini").string();
+    static const auto fontPath = (resourcesDir / "FantasqueSansMono.ttf").string();
+
+    // Analyze the crash
     analyzer::analyze(ExceptionInfo);
+    auto crashReport = getCrashReport();
 
     // Save the crash report
     static bool saved = false;
-    static std::filesystem::path crashReportPath;
+    static auto crashReportPath = crashReportDir / fmt::format("{}.txt", utils::getCurrentDateTime(true));
     if (!saved) {
         // Create the crash report
-        auto crashReport = getCrashReport();
         geode::log::error("Saving crash information...");
-        saved = true;
-        crashReportPath = utils::geode::getCrashlogsPath() / fmt::format("{}.txt", utils::getCurrentDateTime(true));
         std::filesystem::create_directories(crashReportPath.parent_path());
         std::ofstream crashReportFile(crashReportPath);
         crashReportFile << crashReport;
         crashReportFile.close();
+        saved = true;
     }
-
-    // Set up the paths
-    static auto resourcesDir = utils::geode::getResourcesPath();
-    static auto configDir = utils::geode::getConfigPath();
-    static const auto iniPath = (configDir / "imgui.ini").string();
-    static const auto fontPath = (resourcesDir / "FantasqueSansMono.ttf").string();
 
     LONG result = EXCEPTION_CONTINUE_SEARCH;
 
@@ -81,14 +81,13 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         ui::mainFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 14.0f, nullptr, characterRanges);
         ui::titleFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 22.0f, nullptr, characterRanges);
         io.FontDefault = ui::mainFont;
-        ui::applyStyles();
-
         io.MouseWheelFriction = 5.5f;
+        ui::applyStyles();
     }, [&]() {
         // Top-bar
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::MenuItem("Copy Crashlog")) {
-                ImGui::SetClipboardText(getCrashReport().c_str());
+                ImGui::SetClipboardText(crashReport.c_str());
             }
 
             if (ImGui::MenuItem("Open Crashlogs Folder")) {
@@ -139,7 +138,6 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                 }
             }
 
-
             ImGui::EndMainMenuBar();
         }
 
@@ -173,6 +171,7 @@ $execute {
         auto exceptionCode = ExceptionInfo->ExceptionRecord->ExceptionCode;
         switch (exceptionCode) {
             case EXCEPTION_BREAKPOINT:
+            case EXCEPTION_STACK_OVERFLOW:
                 return HandleCrash(ExceptionInfo);
             case EXCEPTION_SET_THREAD_NAME:
                 return EXCEPTION_CONTINUE_SEARCH;
