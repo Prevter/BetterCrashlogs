@@ -3,6 +3,7 @@
 #include "exception-codes.hpp"
 #include "../utils/memory.hpp"
 #include "../utils/utils.hpp"
+#include "../utils/geode-util.hpp"
 
 #pragma comment(lib, "DbgHelp")
 
@@ -148,15 +149,20 @@ namespace analyzer {
             }
         }
 
-        // Check if it's the main module
-        if (module == GetModuleHandle(nullptr)) {
-            // TODO: Parse broma syntax to get the "GeometryDash.exe" function name
-        }
-
         auto methodStart = utils::mem::findMethodStart(address);
         auto methodOffset = (uintptr_t) address - methodStart;
         methodStart -= (uintptr_t)module; // Get the offset from the module base
-        return fmt::format("{}+0x{:X} [<{:X}>+{:x}]", moduleName, moduleOffset, methodStart, methodOffset);
+
+        // Check if it's the main module
+        if (module == GetModuleHandle(nullptr)) {
+            // Check for codegen data
+            auto codegenData = utils::geode::getFunctionAddresses();
+            if (codegenData.find(methodStart) != codegenData.end()) {
+                return fmt::format("{} -> {}+0x{:X}", moduleName, codegenData[methodStart], methodOffset);
+            }
+        }
+
+        return fmt::format("{}+0x{:X} <0x{:X}+{:x}>", moduleName, moduleOffset, methodStart, methodOffset);
     }
 
     std::string getString(uintptr_t address) {
@@ -166,7 +172,19 @@ namespace analyzer {
 
     std::string getFromPointer(uintptr_t address) {
         uintptr_t value = *(uintptr_t *) address;
-        return fmt::format("-> 0x{:X}", value);
+
+        // Check if this was a pointer to a pointer
+        auto valueType = getValueType(value);
+        switch (valueType) {
+            case ValueType::Function:
+                return fmt::format("-> 0x{:X} -> {}", value, getFunctionName(value));
+            case ValueType::String:
+                return fmt::format("-> 0x{:X} -> {}", value, getString(value));
+            case ValueType::Pointer:
+                return fmt::format("-> 0x{:X} {}", value, getFromPointer(value));
+            default:
+                return fmt::format("-> 0x{:X}", value);
+        }
     }
 
     std::pair<ValueType, std::string> getValue(uintptr_t address) {

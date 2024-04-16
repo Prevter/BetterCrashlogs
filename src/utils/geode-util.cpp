@@ -207,4 +207,32 @@ namespace utils::geode {
         return message;
     }
 
+    const std::unordered_map<uintptr_t, std::string>& getFunctionAddresses() {
+        static std::unordered_map<uintptr_t, std::string> functions;
+        if (!functions.empty()) {
+            return functions;
+        }
+
+        auto codegenPath = ::geode::Mod::get()->getResourcesDir() / "CodegenData.txt";
+        if (!ghc::filesystem::exists(codegenPath)) {
+            return functions;
+        }
+
+        std::ifstream file(codegenPath);
+        if (!file.is_open()) {
+            return functions;
+        }
+
+        std::string line;
+        while (std::getline(file, line)) {
+            auto pos = line.find(" - ");
+            if (pos == std::string::npos) {
+                continue;
+            }
+            auto address = std::stoull(line.substr(pos + 3), nullptr, 16);
+            functions[address] = line.substr(0, pos);
+        }
+
+        return functions;
+    }
 }

@@ -53,4 +53,5 @@ namespace utils::geode {
     /// @brief Get installed/loaded mods list message
     const std::string& getModListMessage();
 
+    const std::unordered_map<uintptr_t, std::string>& getFunctionAddresses();
 }
