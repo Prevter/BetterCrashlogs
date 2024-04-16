@@ -79,12 +79,12 @@ namespace utils::geode {
         message = fmt::format(
                 "- Working Directory: {}\n"
                 "- Loader Version: {} (Geometry Dash v{})\n"
-                // "- Loader Commit: {}\n"
-                // "- Bindings Commit: {}\n"
+                "- Loader Commit: {}\n"
+                "- Bindings Commit: {}\n"
                 "- Installed Mods: {} (Loaded: {})\n"
                 "- Problems: {}{}",
                 wd, getLoaderVersion(), GEODE_STR(GEODE_GD_VERSION),
-                // about::getLoaderCommitHash(), about::getBindingsCommitHash(),
+                about::getLoaderCommitHash(), about::getBindingsCommitHash(),
                 getModCount(), getLoadedModCount(), problems.size(),
                 problems.empty() ? "" : fmt::format("\n{}", readProblems(problems))
         );
@@ -138,15 +138,13 @@ namespace utils::geode {
             }
 
             ModStatus status = ModStatus::Disabled;
-            /*if (mod->isCurrentlyLoading()) {
+            if (mod->isCurrentlyLoading()) {
                 status = ModStatus::IsCurrentlyLoading;
-            } else */if (mod->isEnabled()) {
+            } else if (mod->isEnabled()) {
                 status = ModStatus::Enabled;
-            }
-//            else if (mod->hasProblems()) {
-//                status = ModStatus::HasProblems;
-//            }
-            else if (mod->shouldLoad()) {
+            } else if (mod->hasProblems()) {
+                status = ModStatus::HasProblems;
+            } else if (mod->shouldLoad()) {
                 status = ModStatus::ShouldLoad;
             }
 

@@ -1,8 +1,14 @@
-# BetterCrashlogs
+<div align="center">
+   <a href="https://github.com/prevter/gdopenhack">
+      <img src="logo.png" alt="Logo" width="80" height="80">
+   </a>
+   <h3 align="center">Better Crashlogs</h3>
+   <p align="center">
+        A mod that overhauls the crash log system in Geometry Dash.
+   </p>
+</div>
 
 > Note: This mod is still work in progress!
-
-A mod that overhauls the crash log system in Geometry Dash.
 
 ![image](resources/screenshot.png)
 
@@ -26,4 +32,3 @@ A mod that overhauls the crash log system in Geometry Dash.
 - [ ] Parse C++ exceptions
 - [ ] Automatically get the latest broma file for the game
 - [ ] Add a settings menu to configure the theme/font size
-- [ ] Wait for geode v2.0.0-beta.24 to be released (some API changes are needed)

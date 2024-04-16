@@ -4,13 +4,10 @@
 
 // Import the necessary functions from the Geode.dll
 namespace about {
-    GEODE_DLL const char *getLoaderVersionStr();
-
-    GEODE_DLL const char *getLoaderCommitHash();
-
-    GEODE_DLL const char *getBindingsCommitHash();
-
-    GEODE_DLL const char *getLoaderModJson();
+    const char *getLoaderVersionStr();
+    const char *getLoaderCommitHash();
+    const char *getBindingsCommitHash();
+    const char *getLoaderModJson();
 }
 
 namespace utils::geode {

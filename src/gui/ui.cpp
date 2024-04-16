@@ -243,12 +243,12 @@ namespace ui {
         break;
 
             switch (mod.status) {
-                STATUS_CASE(Disabled, "white", " ", "The mod is disabled.")
-                STATUS_CASE(IsCurrentlyLoading, "pointer", "o",
+                STATUS_CASE(Disabled, "address", " ", "The mod is disabled.")
+                STATUS_CASE(IsCurrentlyLoading, "function", "o",
                             "The mod is currently loading.\nThis means the crash may be related to this mod.")
                 STATUS_CASE(Enabled, "string", "x", "The mod is enabled.")
-                STATUS_CASE(HasProblems, "address", "!", "The mod has problems.")
-                STATUS_CASE(ShouldLoad, "function", "~", "The mod is expected to be loaded.")
+                STATUS_CASE(HasProblems, "primary", "!", "The mod has problems.")
+                STATUS_CASE(ShouldLoad, "white", "~", "The mod is expected to be loaded.")
             }
 
 #undef STATUS_CASE
