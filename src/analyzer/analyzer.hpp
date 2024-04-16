@@ -46,7 +46,7 @@ namespace analyzer {
     std::string getString(uintptr_t address);
 
     /// @brief Get the string from a pointer.
-    std::string getFromPointer(uintptr_t address);
+    std::string getFromPointer(uintptr_t address, size_t depth = 0);
 
     /// @brief Deduce the value from a pointer.
     std::pair<ValueType, std::string> getValue(uintptr_t address);

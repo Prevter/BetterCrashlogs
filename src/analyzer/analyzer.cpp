@@ -170,8 +170,12 @@ namespace analyzer {
         return fmt::format("&\"{}\"", str);
     }
 
-    std::string getFromPointer(uintptr_t address) {
+    std::string getFromPointer(uintptr_t address, size_t depth) {
         uintptr_t value = *(uintptr_t *) address;
+
+        if (depth > 10) { // Prevent infinite recursion
+            return fmt::format("-> 0x{:X}", value);
+        }
 
         // Check if this was a pointer to a pointer
         auto valueType = getValueType(value);
@@ -181,7 +185,7 @@ namespace analyzer {
             case ValueType::String:
                 return fmt::format("-> 0x{:X} -> {}", value, getString(value));
             case ValueType::Pointer:
-                return fmt::format("-> 0x{:X} {}", value, getFromPointer(value));
+                return fmt::format("-> 0x{:X} {}", value, getFromPointer(value, depth + 1));
             default:
                 return fmt::format("-> 0x{:X}", value);
         }
