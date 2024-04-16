@@ -328,12 +328,14 @@ namespace ui {
 
         auto stackTrace = analyzer::getStackTrace();
 
-#define COPY_POPUP(value, id)                       \
-        if (ImGui::BeginPopupContextItem(id)) {   \
-            if (ImGui::MenuItem("Copy")) {      \
-                ImGui::SetClipboardText(value); \
-            }                                   \
-            ImGui::EndPopup();                  \
+#define COPY_POPUP(value, id)                        \
+        if (ImGui::BeginPopupContextItem(id)) {      \
+            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);\
+            if (ImGui::MenuItem("Copy")) {           \
+                ImGui::SetClipboardText(value);      \
+            }                                        \
+            ImGui::PopStyleColor();                  \
+            ImGui::EndPopup();                       \
         }
 
         // Create a table with the stack trace
