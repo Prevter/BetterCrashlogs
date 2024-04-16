@@ -81,11 +81,11 @@ namespace utils::geode {
                 "- Loader Version: {} (Geometry Dash v{})\n"
                 "- Loader Commit: {}\n"
                 "- Bindings Commit: {}\n"
-                "- Installed Mods: {} (Loaded: {})\n"
+                "- Installed Mods: {} (Loaded: {}/{})\n"
                 "- Problems: {}{}",
                 wd, getLoaderVersion(), GEODE_STR(GEODE_GD_VERSION),
                 about::getLoaderCommitHash(), about::getBindingsCommitHash(),
-                getModCount(), getLoadedModCount(), problems.size(),
+                getModCount(), getLoadedModCount(), getEnabledModCount(), problems.size(),
                 problems.empty() ? "" : fmt::format("\n{}", readProblems(problems))
         );
 
@@ -104,6 +104,13 @@ namespace utils::geode {
         auto mods = ::geode::Loader::get()->getAllMods();
         return std::count_if(mods.begin(), mods.end(), [](const ::geode::Mod *mod) {
             return mod->isEnabled();
+        });
+    }
+
+    uint32_t getEnabledModCount() {
+        auto mods = ::geode::Loader::get()->getAllMods();
+        return std::count_if(mods.begin(), mods.end(), [](const ::geode::Mod *mod) {
+            return mod->shouldLoad();
         });
     }
 

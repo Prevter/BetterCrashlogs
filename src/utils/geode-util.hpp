@@ -24,6 +24,9 @@ namespace utils::geode {
     /// @brief Get the amount of mods loaded
     uint32_t getLoadedModCount();
 
+    /// @brief Get the amount of mods enabled
+    uint32_t getEnabledModCount();
+
     /// @brief Get the path to the crashlogs folder
     ghc::filesystem::path getCrashlogsPath();
 
