@@ -73,6 +73,13 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
 
     LONG result = EXCEPTION_CONTINUE_SEARCH;
 
+    // Check if that was a graphics driver crash (because window will draw white screen)
+    if (analyzer::isGraphicsDriverCrash()) {
+        // Fallback to MessageBox if the window doesn't work
+        MessageBoxA(nullptr, crashReport.c_str(), "Something went wrong! ~ BetterCrashlogs fallback mode", MB_ICONERROR | MB_OK);
+        return result;
+    }
+
     // Create the window
     gui::ImGuiWindow window([]() {
         auto &io = ImGui::GetIO();

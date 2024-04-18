@@ -412,4 +412,18 @@ namespace analyzer {
         return stackTraceMessage;
     }
 
+    bool isGraphicsDriverCrash() {
+        // check latest 3 stack frames
+        auto trace = getStackTrace();
+        for (int i = 0; i < 3 && i < trace.size(); i++) {
+            auto &line = trace[i];
+            if (line.module.name.find("nvoglv32.dll") != std::string::npos || // NVIDIA
+                line.module.name.find("atidxx32.dll") != std::string::npos || // AMD
+                line.module.name.find("igdumd32.dll") != std::string::npos) { // Intel
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

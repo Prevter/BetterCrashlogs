@@ -115,4 +115,7 @@ namespace analyzer {
     /// @note This function should be called after the analyze function.
     /// @return The stack trace message that can be displayed to the user.
     const std::string& getStackTraceMessage();
+
+    /// @brief Check if the graphics driver crashed. (stack trace contains GPU driver dll)
+    bool isGraphicsDriverCrash();
 }
