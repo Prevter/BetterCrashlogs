@@ -418,8 +418,8 @@ namespace analyzer {
         for (int i = 0; i < 3 && i < trace.size(); i++) {
             auto &line = trace[i];
             if (line.module.name.find("nvoglv32.dll") != std::string::npos || // NVIDIA
-                line.module.name.find("atidxx32.dll") != std::string::npos || // AMD
-                line.module.name.find("igdumd32.dll") != std::string::npos) { // Intel
+                line.module.name.find("atioglxx.dll") != std::string::npos || // AMD
+                line.module.name.find("ig9icd32.dll") != std::string::npos) { // Intel
                 return true;
             }
         }
