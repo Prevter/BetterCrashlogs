@@ -149,20 +149,33 @@ namespace analyzer {
             }
         }
 
-        auto methodStart = utils::mem::findMethodStart(address);
-        auto methodOffset = (uintptr_t) address - methodStart;
-        methodStart -= (uintptr_t)module; // Get the offset from the module base
 
         // Check if it's the main module
         if (module == GetModuleHandle(nullptr)) {
-            // Check for codegen data
-            auto codegenData = utils::geode::getFunctionAddresses();
-            if (codegenData.find(methodStart) != codegenData.end()) {
-                return fmt::format("{} -> {}+0x{:X}", moduleName, codegenData[methodStart], methodOffset);
+            // Look up the function name in the CodegenData.txt file
+            auto methodInfo = utils::geode::getFunctionAddress(address, (uintptr_t) module);
+            geode::log::debug("\nMethod info: {}+0x{:X} -> \"{}\" @ 0x{:X}", moduleName, address, methodInfo.second, methodInfo.first);
+            if (methodInfo.first != 0) {
+                auto methodOffset = moduleOffset - methodInfo.first;
+                auto methodName = methodInfo.second;
+                if (methodName.empty()) {
+                    return fmt::format("{}+0x{:X} <0x{:X}+{:x}>", moduleName, moduleOffset, methodInfo.first, methodOffset);
+                }
+                return fmt::format("{} -> {}+0x{:X}", moduleName, methodName, methodOffset);
             }
+
+            return fmt::format("{}+0x{:X}", moduleName, moduleOffset);
         }
 
-        return fmt::format("{}+0x{:X} <0x{:X}+{:x}>", moduleName, moduleOffset, methodStart, methodOffset);
+        {
+            auto methodStart = utils::mem::findMethodStart(address);
+            if (methodStart == 0) {
+                return fmt::format("{}+0x{:X}", moduleName, moduleOffset);
+            }
+            auto methodOffset = (uintptr_t) address - methodStart;
+            methodStart -= (uintptr_t)module; // Get the offset from the module base
+            return fmt::format("{}+0x{:X} <0x{:X}+{:x}>", moduleName, moduleOffset, methodStart, methodOffset);
+        }
     }
 
     std::string getString(uintptr_t address) {

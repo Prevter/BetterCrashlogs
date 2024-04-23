@@ -70,11 +70,14 @@ namespace utils::mem {
         return buffer;
     }
 
-    /// @brief Get the address of a function by backtracking to the first "int 3" instruction.
+    /// @brief Get the address of a function by backtracking until we get a 0xCC55 (int 3, push ebp) sequence.
+    /// @param address The address to start from.
+    /// @param maxOffset The maximum offset to search for (for safety).
+    /// @return The address of the "push ebp" instruction if found, otherwise 0.
     inline uintptr_t findMethodStart(uintptr_t address, uintptr_t maxOffset = 0x1000) {
         uintptr_t offset = 0;
         while (offset < maxOffset) {
-            if (*reinterpret_cast<uint8_t *>(address - offset) == 0xCC) {
+            if (*(uint16_t*) (address - offset) == 0x55CC) {
                 return address - offset + 1;
             }
             offset++;

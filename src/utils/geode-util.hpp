@@ -60,4 +60,10 @@ namespace utils::geode {
     const std::string& getModListMessage();
 
     const std::unordered_map<uintptr_t, std::string>& getFunctionAddresses();
+
+    /// @brief Try to find the function address and name from the given address.
+    /// @note If the address is not found, the name will be an empty string
+    /// @param address The address to search for
+    /// @param moduleBase The base address of the module
+    std::pair<uintptr_t, std::string> getFunctionAddress(uintptr_t address, uintptr_t moduleBase);
 }

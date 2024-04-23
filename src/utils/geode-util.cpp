@@ -1,6 +1,8 @@
 #include "geode-util.hpp"
 #include <Geode/Geode.hpp>
 
+#include "memory.hpp"
+
 namespace utils::geode {
 
     const char *problemTypeToString(::geode::LoadProblem::Type type) {
@@ -243,4 +245,29 @@ namespace utils::geode {
 
         return functions;
     }
+
+    std::pair<uintptr_t, std::string> getFunctionAddress(uintptr_t address, uintptr_t moduleBase) {
+        auto methodStart = mem::findMethodStart(address);
+        if (methodStart == 0) return {0, ""}; // Outside the 0x1000 offset
+
+        methodStart -= moduleBase; // Get the relative address
+
+        auto functions = getFunctionAddresses();
+        auto it = functions.find(methodStart);
+        if (it == functions.end()) {
+            // Check if function was not aligned using "int 3"
+            // (look for functions between `methodStart` and `address`)
+            uintptr_t iterator = address - moduleBase;
+            while (iterator > methodStart) {
+                auto found = functions.find(iterator--);
+                if (found != functions.end()) {
+                    return *found;
+                }
+            }
+        }
+
+        return it == functions.end() ? std::make_pair(methodStart, "") : *it;
+    }
+
+
 }
