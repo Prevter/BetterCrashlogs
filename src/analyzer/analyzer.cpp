@@ -154,7 +154,6 @@ namespace analyzer {
         if (module == GetModuleHandle(nullptr)) {
             // Look up the function name in the CodegenData.txt file
             auto methodInfo = utils::geode::getFunctionAddress(address, (uintptr_t) module);
-            geode::log::debug("\nMethod info: {}+0x{:X} -> \"{}\" @ 0x{:X}", moduleName, address, methodInfo.second, methodInfo.first);
             if (methodInfo.first != 0) {
                 auto methodOffset = moduleOffset - methodInfo.first;
                 auto methodName = methodInfo.second;
