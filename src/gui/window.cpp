@@ -4,6 +4,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h>
+#include "../utils/config.hpp"
 
 namespace gui {
 
@@ -26,11 +27,19 @@ namespace gui {
         glfwWindowHint(GLFW_FOCUSED, 1);
         glfwWindowHint(0x2000C, 1);
 
-        m_window = glfwCreateWindow(1280, 720, "Oops! Something went wrong.", nullptr, nullptr);
+        // Load the saved window size and position
+        auto& config = config::get();
+        if (config.window_maximized)
+            glfwWindowHint(0x20008, 1);
+
+        m_window = glfwCreateWindow(config.window_w, config.window_h, "Oops! Something went wrong.", nullptr, nullptr);
         if (!m_window) {
             glfwTerminate();
             return;
         }
+
+        if (!config.window_maximized)
+            glfwSetWindowPos(reinterpret_cast<GLFWwindow *>(m_window), config.window_x, config.window_y);
 
         glfwMakeContextCurrent(reinterpret_cast<GLFWwindow*>(m_window));
         glfwSwapInterval(1);
@@ -47,6 +56,21 @@ namespace gui {
             onDraw();
             glfwSwapBuffers(window);
         }
+
+        // Save the window size and position
+        int x, y, w, h;
+        bool isMaximized = glfwGetWindowAttrib(window, 0x20008);
+        auto& config = config::get();
+        if (!isMaximized) {
+            glfwGetWindowPos(window, &x, &y);
+            glfwGetWindowSize(window, &w, &h);
+            config.window_x = x;
+            config.window_y = y;
+            config.window_w = w;
+            config.window_h = h;
+        }
+        config.window_maximized = isMaximized;
+        config::save();
 
         destroy();
     }
