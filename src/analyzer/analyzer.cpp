@@ -101,13 +101,12 @@ namespace analyzer {
         exceptionMessage = fmt::format(
                 "- Thread Information: {}\n"
                 "- Exception Code: {} (0x{:X})\n"
-                "- Exception Address: 0x{:X} ({})\n"
+                "- Exception Address: {}\n"
                 "- Exception Flags: 0x{:X}\n"
                 "- Exception Parameters: {}{}",
                 threadInfo,
                 exceptionName, exceptionCode,
-                (uintptr_t) exceptionInfo->ExceptionRecord->ExceptionAddress,
-                getFunctionName((uintptr_t) exceptionInfo->ExceptionRecord->ExceptionAddress),
+                getFunction((uintptr_t) exceptionInfo->ExceptionRecord->ExceptionAddress).toString(),
                 exceptionInfo->ExceptionRecord->ExceptionFlags,
                 parameters,
                 extraInfo.empty() ? "" : fmt::format("\n{}", extraInfo)
@@ -129,10 +128,27 @@ namespace analyzer {
         return ValueType::Pointer;
     }
 
-    std::string getFunctionName(uintptr_t address) {
+    std::string MethodInfo::toString() const {
+        if (address == 0) {
+            return fmt::format("0x{:08X}", offset); // Unknown function
+        }
+
+        if (module.empty()) {
+            return fmt::format("0x{:08X}+0x{:X}", address, offset); // No module name
+        }
+
+        if (name.empty()) {
+            return fmt::format("{}+0x{:X}", module, offset); // No function name
+        }
+
+        return fmt::format("{}+0x{:X} ({}+0x{:x})", module, address, name, offset);
+    }
+
+    MethodInfo getFunction(uintptr_t address) {
         HMODULE module = utils::mem::getModuleHandle(address);
-        if (module == nullptr)
-            return fmt::format("0x{:X}", address);
+        if (module == nullptr) {
+            return {0, address};
+        }
 
         auto moduleName = utils::mem::getModuleName(module);
         auto moduleOffset = (uintptr_t) address - reinterpret_cast<DWORD>(module);
@@ -145,10 +161,9 @@ namespace analyzer {
             pSymbol->MaxNameLen = MAX_SYM_NAME;
             DWORD64 displacement;
             if (SymFromAddr(GetCurrentProcess(), (DWORD64) address, &displacement, pSymbol)) {
-                return fmt::format("{} -> {}+0x{:X}", moduleName, pSymbol->Name, displacement);
+                return {moduleName, moduleOffset, pSymbol->Name, static_cast<uintptr_t>(displacement)};
             }
         }
-
 
         // Check if it's the main module
         if (module == GetModuleHandle(nullptr)) {
@@ -158,22 +173,27 @@ namespace analyzer {
                 auto methodOffset = moduleOffset - methodInfo.first;
                 auto methodName = methodInfo.second;
                 if (methodName.empty()) {
-                    return fmt::format("{}+0x{:X} <0x{:X}+{:x}>", moduleName, moduleOffset, methodInfo.first, methodOffset);
+                    // return fmt::format("{}+0x{:X} <0x{:X}+{:x}>", moduleName, moduleOffset, methodInfo.first, methodOffset);
+                    return {moduleName, moduleOffset, fmt::format("<0x{:x}>", methodInfo.first), methodOffset};
                 }
-                return fmt::format("{} -> {}+0x{:X}", moduleName, methodName, methodOffset);
+                // return fmt::format("{} -> {}+0x{:X}", moduleName, methodName, methodOffset);
+                return {moduleName, moduleOffset, methodName, methodOffset};
             }
 
-            return fmt::format("{}+0x{:X}", moduleName, moduleOffset);
+            // return fmt::format("{}+0x{:X}", moduleName, moduleOffset);
+            return {moduleName, moduleOffset, 0};
         }
 
         {
             auto methodStart = utils::mem::findMethodStart(address);
             if (methodStart == 0) {
-                return fmt::format("{}+0x{:X}", moduleName, moduleOffset);
+                // return fmt::format("{}+0x{:X}", moduleName, moduleOffset);
+                return {moduleName, moduleOffset, 0};
             }
             auto methodOffset = (uintptr_t) address - methodStart;
-            methodStart -= (uintptr_t)module; // Get the offset from the module base
-            return fmt::format("{}+0x{:X} <0x{:X}+{:x}>", moduleName, moduleOffset, methodStart, methodOffset);
+            methodStart -= (uintptr_t) module; // Get the offset from the module base
+            // return fmt::format("{}+0x{:X} <0x{:X}+{:x}>", moduleName, moduleOffset, methodStart, methodOffset);
+            return {moduleName, moduleOffset, fmt::format("<0x{:x}>", methodStart), methodOffset};
         }
     }
 
@@ -186,14 +206,14 @@ namespace analyzer {
         uintptr_t value = *(uintptr_t *) address;
 
         if (depth > 10) { // Prevent infinite recursion
-            return fmt::format("-> 0x{:X}", value);
+            return fmt::format("-> 0x{:X} [...]", value);
         }
 
         // Check if this was a pointer to a pointer
         auto valueType = getValueType(value);
         switch (valueType) {
             case ValueType::Function:
-                return fmt::format("-> 0x{:X} -> {}", value, getFunctionName(value));
+                return fmt::format("-> 0x{:X} -> {}", value, getFunction(value).toString());
             case ValueType::String:
                 return fmt::format("-> 0x{:X} -> {}", value, getString(value));
             case ValueType::Pointer:
@@ -206,7 +226,7 @@ namespace analyzer {
     std::pair<ValueType, std::string> getValue(uintptr_t address) {
         switch (getValueType(address)) {
             case ValueType::Function:
-                return {ValueType::Function, getFunctionName(address)};
+                return {ValueType::Function, getFunction(address).toString()};
             case ValueType::String:
                 return {ValueType::String, getString(address)};
             case ValueType::Pointer:
@@ -369,14 +389,12 @@ namespace analyzer {
             }
             StackTraceLine line{};
             line.address = stackFrame.AddrPC.Offset;
+            line.function = getFunction(stackFrame.AddrPC.Offset);
             line.framePointer = stackFrame.AddrFrame.Offset;
-            auto module = getModuleInfo((void*) stackFrame.AddrPC.Offset);
+            auto module = getModuleInfo((void *) stackFrame.AddrPC.Offset);
             if (module) {
                 line.module = *module;
                 line.moduleOffset = stackFrame.AddrPC.Offset - (uintptr_t) module->handle;
-                line.function = getFunctionName(stackFrame.AddrPC.Offset);
-                line.functionAddress = utils::mem::findMethodStart(stackFrame.AddrPC.Offset);
-                line.functionOffset = stackFrame.AddrPC.Offset - line.functionAddress;
             }
 
             if (debugSymbolsLoaded) {
@@ -384,8 +402,8 @@ namespace analyzer {
                 IMAGEHLP_LINE64 lineInfo;
                 lineInfo.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
                 if (SymGetLineFromAddr64(process, stackFrame.AddrPC.Offset, &displacement, &lineInfo)) {
-                    line.file = lineInfo.FileName;
-                    line.line = lineInfo.LineNumber;
+                    line.function.file = lineInfo.FileName;
+                    line.function.line = lineInfo.LineNumber;
                 }
             }
 
@@ -402,19 +420,28 @@ namespace analyzer {
         auto data = getStackTrace();
 
         for (const auto &stackLine: data) {
-            if (stackLine.function.empty()) {
-                stackTraceMessage += fmt::format("- 0x{:08X}\n", stackLine.address);
+            if (stackLine.function.module.empty()) {    // Likely a virtual function
+                if (stackLine.function.address == 0) {  // Function start not found
+                    stackTraceMessage += fmt::format("- 0x{:08X}\n", stackLine.function.offset);
+                } else {
+                    stackTraceMessage += fmt::format("- 0x{:08X}+0x{:x}\n", stackLine.function.address,
+                                                     stackLine.function.offset);
+                }
                 continue;
             }
 
-            stackTraceMessage += fmt::format(
-                    "- {} + 0x{:x} ({})\n{}",
-                    stackLine.module.name, stackLine.moduleOffset,
-                    stackLine.function.empty() ?
-                    fmt::format("<0x{:X}>+0x{:X}", stackLine.functionAddress, stackLine.functionOffset) :
-                    stackLine.function, stackLine.file.empty() ?
-                                        "" : fmt::format("└ {}:{}\n", stackLine.file, stackLine.line)
-            );
+            if (stackLine.function.name.empty()) {
+                stackTraceMessage += fmt::format("- {}+0x{:X}\n", stackLine.function.module, stackLine.moduleOffset);
+            } else {
+                stackTraceMessage += fmt::format(
+                        "- {}+0x{:X} ({}+0x{:x})\n",
+                        stackLine.function.module, stackLine.function.address,
+                        stackLine.function.name, stackLine.function.offset);
+            }
+
+            if (!stackLine.function.file.empty()) {
+                stackTraceMessage += fmt::format("└ {}:{}\n", stackLine.function.file, stackLine.function.line);
+            }
         }
 
         if (!stackTraceMessage.empty()) {

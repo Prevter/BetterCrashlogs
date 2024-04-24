@@ -339,13 +339,13 @@ namespace ui {
             // Create a table with the stack trace
             for (const auto &line: stackTrace) {
                 ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
-                if (line.function.empty()) {
+                auto functionStr = line.function.toString();
+                if (line.function.module.empty()) {
                     ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
-                    ImGui::Text("- 0x%08X", line.address);
-                    COPY_POPUP(fmt::format("0x{:X}", line.address).c_str(),
-                               fmt::format("address_{:X}", line.address).c_str());
+                    ImGui::Text("- %s", functionStr.c_str());
+                    COPY_POPUP(functionStr.c_str(), fmt::format("address_{:X}", line.address).c_str());
                     ImGui::PopStyleColor();
-                } else if (ImGui::TreeNode(line.function.c_str())) {
+                } else if (ImGui::TreeNode(functionStr.c_str())) {
                     ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
                     ImGui::Text("Address");
                     ImGui::PopStyleColor();
@@ -367,22 +367,18 @@ namespace ui {
                     ImGui::SameLine();
 
                     ImGui::PushStyleColor(ImGuiCol_Text, colorMap["function"]);
-                    if (!line.function.empty()) {
-                        ImGui::Text("%s", line.function.c_str());
-                        COPY_POPUP(line.function.c_str(), line.function.c_str());
-                    } else {
-                        ImGui::Text("<0x%08X>+0x%X", line.functionAddress, line.functionOffset);
-                    }
+                    ImGui::Text("%s", functionStr.c_str());
+                    COPY_POPUP(functionStr.c_str(), functionStr.c_str());
                     ImGui::PopStyleColor();
 
-                    if (!line.file.empty()) {
+                    if (!line.function.file.empty()) {
                         ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
                         ImGui::Text("File");
                         ImGui::PopStyleColor();
 
                         ImGui::SameLine();
 
-                        auto lineStr = fmt::format("{}:{}", line.file, line.line);
+                        auto lineStr = fmt::format("{}:{}", line.function.file, line.function.line);
                         ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
                         ImGui::Text("%s", lineStr.c_str());
                         ImGui::PopStyleColor();
@@ -414,9 +410,7 @@ namespace ui {
 
     void disassemblyWindow() {
         if (ImGui::Begin("Disassembly", nullptr, ImGuiWindowFlags_HorizontalScrollbar)) {
-
             ImGui::Text("Disassembly is not implemented yet.");
-
         }
         ImGui::End();
     }

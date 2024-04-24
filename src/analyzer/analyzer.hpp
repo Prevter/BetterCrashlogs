@@ -2,6 +2,8 @@
 
 #include <Windows.h>
 
+#include <utility>
+
 namespace analyzer {
 
     struct ModuleInfo {
@@ -36,11 +38,39 @@ namespace analyzer {
         String,
     };
 
+    struct MethodInfo {
+        std::string module; // Module name
+        uintptr_t address; // Address, relative to the module
+        std::string name; // Function name
+        uintptr_t offset; // Offset from the function start
+
+        std::string file; // File name (if available)
+        uint32_t line; // Line number (if available)
+
+        /// @brief Default constructor.
+        MethodInfo() : address(0), offset(0), line(0) {}
+
+        /// @brief No-module constructor.
+        MethodInfo(uintptr_t addr, uintptr_t offset)
+                : address(addr), offset(offset), line(0) {}
+
+        /// @brief Constructor with module.
+        MethodInfo(std::string mod, uintptr_t addr, uintptr_t offset)
+                : module(std::move(mod)), address(addr), offset(offset), line(0) {}
+
+        /// @brief Constructor with module and function name.
+        MethodInfo(std::string mod, uintptr_t addr, std::string nm, uintptr_t offset)
+                : module(std::move(mod)), address(addr), name(std::move(nm)), offset(offset), line(0) {}
+
+        /// @brief Convert the method info to a string.
+        [[nodiscard]] std::string toString() const;
+    };
+
     /// @brief Get the value type of an address.
     ValueType getValueType(uintptr_t address);
 
-    /// @brief Get decorated function name from an address.
-    std::string getFunctionName(uintptr_t address);
+    /// @brief Get the function information from an address.
+    MethodInfo getFunction(uintptr_t address);
 
     /// @brief Get the string from an address.
     std::string getString(uintptr_t address);
@@ -95,15 +125,11 @@ namespace analyzer {
     const std::string& getStackAllocationsMessage();
 
     struct StackTraceLine {
-        uintptr_t address;
-        ModuleInfo module;
-        uintptr_t moduleOffset;
-        std::string function;
-        uintptr_t functionAddress;
-        uintptr_t functionOffset;
-        std::string file;
-        uint32_t line;
-        uintptr_t framePointer;
+        uintptr_t address{}; // Address of the function (absolute)
+        ModuleInfo module; // Module information
+        uintptr_t moduleOffset{}; // Offset from the module base
+        MethodInfo function; // Function information
+        uintptr_t framePointer{}; // Stack frame pointer
     };
 
     /// @brief Get the stack trace.
