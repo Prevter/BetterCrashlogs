@@ -54,4 +54,7 @@ namespace ui {
     /// @brief Contains the list of installed/loaded mods
     void modsWindow();
 
+    /// @brief Contains disassembled code around the exception
+    void disassemblyWindow();
+
 }

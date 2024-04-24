@@ -97,60 +97,208 @@ namespace ui {
     }
 
     void informationWindow() {
-        ImGui::Begin("Exception Information");
-
-        ImGui::PushFont(titleFont);
-        ImGui::TextWrapped("%s", pickRandomQuote());
-        ImGui::PopFont();
-
-        ImGui::TextWrapped("%s", analyzer::getExceptionMessage().c_str());
-
+        if (ImGui::Begin("Exception Information")) {
+            ImGui::PushFont(titleFont);
+            ImGui::TextWrapped("%s", pickRandomQuote());
+            ImGui::PopFont();
+            ImGui::TextWrapped("%s", analyzer::getExceptionMessage().c_str());
+        }
         ImGui::End();
     }
 
     void metadataWindow() {
-        ImGui::Begin("Geode Information");
-
-        ImGui::TextWrapped("%s", utils::geode::getLoaderMetadataMessage().c_str());
-
+        if (ImGui::Begin("Geode Information")) {
+            ImGui::TextWrapped("%s", utils::geode::getLoaderMetadataMessage().c_str());
+        }
         ImGui::End();
     }
 
     void registersWindow() {
-        ImGui::Begin("Register States");
+        if (ImGui::Begin("Register States")) {
 
-        auto registers = analyzer::getRegisterStates();
+            auto registers = analyzer::getRegisterStates();
 
-        // Create a table with the register states
-        ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit |
-                                ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_ScrollX;
-        ImVec2 size = ImVec2(0, 11 * ImGui::GetTextLineHeightWithSpacing());
-        if (ImGui::BeginTable("registers", 3, flags, size)) {
-            ImGui::TableSetupColumn("Name");
+            // Create a table with the register states
+            ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit |
+                                    ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_ScrollX;
+            ImVec2 size = ImVec2(0, 11 * ImGui::GetTextLineHeightWithSpacing());
+            if (ImGui::BeginTable("registers", 3, flags, size)) {
+                ImGui::TableSetupColumn("Name");
+                ImGui::TableSetupColumn("Value");
+                ImGui::TableSetupColumn("Description");
+                ImGui::TableHeadersRow();
+
+                for (const auto &reg: registers) {
+                    ImGui::TableNextColumn();
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                    ImGui::Text("%s", reg.name.c_str());
+                    ImGui::PopStyleColor();
+
+                    ImGui::TableNextColumn();
+
+                    if (reg.type != analyzer::ValueType::Unknown) {
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["pointer"]);
+                    } else {
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                    }
+                    ImGui::Text("%08X", reg.value);
+                    ImGui::PopStyleColor();
+
+                    ImGui::TableNextColumn();
+
+                    switch (reg.type) {
+                        case analyzer::ValueType::Pointer:
+                            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
+                            break;
+                        case analyzer::ValueType::Function:
+                            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["function"]);
+                            break;
+                        case analyzer::ValueType::String:
+                            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
+                            break;
+                        default:
+                            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                            break;
+                    }
+                    ImGui::Text("%s", reg.description.c_str());
+                    ImGui::PopStyleColor();
+                }
+
+                ImGui::EndTable();
+            }
+
+            // Flags table
+            if (ImGui::BeginTable("flags", 6,
+                                  ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit |
+                                  ImGuiTableFlags_NoHostExtendX)) {
+                ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableHeadersRow();
+
+                auto context = analyzer::getCpuFlags();
+                int i = 0;
+                for (const auto &[flag, value]: context) {
+                    ImGui::TableNextColumn();
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                    ImGui::Text("%s", flag.c_str());
+                    ImGui::PopStyleColor();
+
+                    ImGui::TableNextColumn();
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, value ? colorMap["string"] : colorMap["white"]);
+                    ImGui::Text("%s", value ? "1" : "0");
+                    ImGui::PopStyleColor();
+
+                    if (++i % 3 == 0 && i < context.size()) {
+                        ImGui::TableNextRow();
+                    }
+                }
+
+                ImGui::EndTable();
+            }
+        }
+        ImGui::End();
+    }
+
+    void modsWindow() {
+        if (ImGui::Begin("Installed Mods")) {
+
+            auto mods = utils::geode::getModList();
+
+            // Create a table with the installed mods
+            ImGui::BeginTable("mods", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                         ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX |
+                                         ImGuiTableFlags_NoHostExtendY);
+            ImGui::TableSetupColumn("Version");
+            ImGui::TableSetupColumn("Mod ID");
+            ImGui::TableHeadersRow();
+
+            int i = 0;
+            for (const auto &mod: mods) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+
+                std::string statusStr;
+                std::string tooltipStr;
+
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                ImGui::Text("%s", mod.version.c_str());
+                ImGui::PopStyleColor();
+
+
+#define STATUS_CASE(status, color, text, tooltip)              \
+    case utils::geode::ModStatus::status:                      \
+        ImGui::PushStyleColor(ImGuiCol_Text, colorMap[color]); \
+        statusStr = text;                                      \
+        tooltipStr = tooltip;                                  \
+        break;
+
+                switch (mod.status) {
+                    STATUS_CASE(Disabled, "address", " ", "The mod is disabled.")
+                    STATUS_CASE(IsCurrentlyLoading, "function", "o",
+                                "The mod is currently loading.\nThis means the crash may be related to this mod.")
+                    STATUS_CASE(Enabled, "string", "x", "The mod is enabled.")
+                    STATUS_CASE(HasProblems, "primary", "!", "The mod has problems.")
+                    STATUS_CASE(ShouldLoad, "white", "~", "The mod is expected to be loaded.")
+                }
+
+#undef STATUS_CASE
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", mod.id.c_str());
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("%s", tooltipStr.c_str());
+                }
+                ImGui::PopStyleColor();
+            }
+
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    }
+
+    void stackWindow() {
+        if (ImGui::Begin("Stack Allocations")) {
+
+            auto stackAlloc = analyzer::getStackData();
+
+            // Create a table with the stack trace
+            ImGui::BeginTable("stack", 3,
+                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit |
+                              ImGuiTableFlags_ScrollX | ImGuiTableFlags_NoHostExtendY);
+            ImGui::TableSetupColumn("Address");
             ImGui::TableSetupColumn("Value");
             ImGui::TableSetupColumn("Description");
             ImGui::TableHeadersRow();
 
-            for (const auto &reg: registers) {
+            int i = 0;
+            for (const auto &line: stackAlloc) {
+                ImGui::TableNextRow();
                 ImGui::TableNextColumn();
 
                 ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
-                ImGui::Text("%s", reg.name.c_str());
+                ImGui::Text("%08X", line.address);
                 ImGui::PopStyleColor();
 
                 ImGui::TableNextColumn();
 
-                if (reg.type != analyzer::ValueType::Unknown) {
+                if (line.type != analyzer::ValueType::Unknown) {
                     ImGui::PushStyleColor(ImGuiCol_Text, colorMap["pointer"]);
                 } else {
                     ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
                 }
-                ImGui::Text("%08X", reg.value);
+                ImGui::Text("%08X", line.value);
                 ImGui::PopStyleColor();
 
                 ImGui::TableNextColumn();
 
-                switch (reg.type) {
+                switch (line.type) {
                     case analyzer::ValueType::Pointer:
                         ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
                         break;
@@ -164,169 +312,19 @@ namespace ui {
                         ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
                         break;
                 }
-                ImGui::Text("%s", reg.description.c_str());
+                ImGui::Text("%s", line.description.c_str());
                 ImGui::PopStyleColor();
             }
 
             ImGui::EndTable();
         }
-
-        // Flags table
-        if (ImGui::BeginTable("flags", 6,
-                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit |
-                              ImGuiTableFlags_NoHostExtendX)) {
-            ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
-            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
-            ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
-            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
-            ImGui::TableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed);
-            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
-            ImGui::TableHeadersRow();
-
-            auto context = analyzer::getCpuFlags();
-            int i = 0;
-            for (const auto &[flag, value]: context) {
-                ImGui::TableNextColumn();
-
-                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
-                ImGui::Text("%s", flag.c_str());
-                ImGui::PopStyleColor();
-
-                ImGui::TableNextColumn();
-
-                ImGui::PushStyleColor(ImGuiCol_Text, value ? colorMap["string"] : colorMap["white"]);
-                ImGui::Text("%s", value ? "1" : "0");
-                ImGui::PopStyleColor();
-
-                if (++i % 3 == 0 && i < context.size()) {
-                    ImGui::TableNextRow();
-                }
-            }
-
-            ImGui::EndTable();
-        }
-
-        ImGui::End();
-    }
-
-    void modsWindow() {
-        ImGui::Begin("Installed Mods");
-
-        auto mods = utils::geode::getModList();
-
-        // Create a table with the installed mods
-        ImGui::BeginTable("mods", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
-                                     ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX |
-                                     ImGuiTableFlags_NoHostExtendY);
-        ImGui::TableSetupColumn("Version");
-        ImGui::TableSetupColumn("Mod ID");
-        ImGui::TableHeadersRow();
-
-        int i = 0;
-        for (const auto &mod: mods) {
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-
-            std::string statusStr;
-            std::string tooltipStr;
-
-            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
-            ImGui::Text("%s", mod.version.c_str());
-            ImGui::PopStyleColor();
-
-
-#define STATUS_CASE(status, color, text, tooltip)              \
-    case utils::geode::ModStatus::status:                      \
-        ImGui::PushStyleColor(ImGuiCol_Text, colorMap[color]); \
-        statusStr = text;                                      \
-        tooltipStr = tooltip;                                  \
-        break;
-
-            switch (mod.status) {
-                STATUS_CASE(Disabled, "address", " ", "The mod is disabled.")
-                STATUS_CASE(IsCurrentlyLoading, "function", "o",
-                            "The mod is currently loading.\nThis means the crash may be related to this mod.")
-                STATUS_CASE(Enabled, "string", "x", "The mod is enabled.")
-                STATUS_CASE(HasProblems, "primary", "!", "The mod has problems.")
-                STATUS_CASE(ShouldLoad, "white", "~", "The mod is expected to be loaded.")
-            }
-
-#undef STATUS_CASE
-
-            ImGui::TableNextColumn();
-            ImGui::Text("%s", mod.id.c_str());
-            if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("%s", tooltipStr.c_str());
-            }
-            ImGui::PopStyleColor();
-        }
-
-        ImGui::EndTable();
-
-        ImGui::End();
-    }
-
-    void stackWindow() {
-        ImGui::Begin("Stack Allocations");
-
-        auto stackAlloc = analyzer::getStackData();
-
-        // Create a table with the stack trace
-        ImGui::BeginTable("stack", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit |
-                                      ImGuiTableFlags_ScrollX | ImGuiTableFlags_NoHostExtendY);
-        ImGui::TableSetupColumn("Address");
-        ImGui::TableSetupColumn("Value");
-        ImGui::TableSetupColumn("Description");
-        ImGui::TableHeadersRow();
-
-        int i = 0;
-        for (const auto &line: stackAlloc) {
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-
-            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
-            ImGui::Text("%08X", line.address);
-            ImGui::PopStyleColor();
-
-            ImGui::TableNextColumn();
-
-            if (line.type != analyzer::ValueType::Unknown) {
-                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["pointer"]);
-            } else {
-                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
-            }
-            ImGui::Text("%08X", line.value);
-            ImGui::PopStyleColor();
-
-            ImGui::TableNextColumn();
-
-            switch (line.type) {
-                case analyzer::ValueType::Pointer:
-                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
-                    break;
-                case analyzer::ValueType::Function:
-                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["function"]);
-                    break;
-                case analyzer::ValueType::String:
-                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
-                    break;
-                default:
-                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
-                    break;
-            }
-            ImGui::Text("%s", line.description.c_str());
-            ImGui::PopStyleColor();
-        }
-
-        ImGui::EndTable();
-
         ImGui::End();
     }
 
     void stackTraceWindow() {
-        ImGui::Begin("Stack Trace", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
+        if (ImGui::Begin("Stack Trace", nullptr, ImGuiWindowFlags_HorizontalScrollbar)) {
 
-        auto stackTrace = analyzer::getStackTrace();
+            auto stackTrace = analyzer::getStackTrace();
 
 #define COPY_POPUP(value, id)                        \
         if (ImGui::BeginPopupContextItem(id)) {      \
@@ -338,75 +336,88 @@ namespace ui {
             ImGui::EndPopup();                       \
         }
 
-        // Create a table with the stack trace
-        for (const auto &line: stackTrace) {
-            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
-            if (line.function.empty()) {
-                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
-                ImGui::Text("- 0x%08X", line.address);
-                COPY_POPUP(fmt::format("0x{:X}", line.address).c_str(), fmt::format("address_{:X}", line.address).c_str());
-                ImGui::PopStyleColor();
-            } else if (ImGui::TreeNode(line.function.c_str())) {
+            // Create a table with the stack trace
+            for (const auto &line: stackTrace) {
                 ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
-                ImGui::Text("Address");
-                ImGui::PopStyleColor();
-
-                ImGui::SameLine();
-
-                auto addressStr = fmt::format("{}+0x{:X} (0x{:X})", line.module.name, line.moduleOffset, line.address);
-                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
-                ImGui::Text("%s", addressStr.c_str());
-                ImGui::PopStyleColor();
-
-                COPY_POPUP(addressStr.c_str(), addressStr.c_str());
-
-                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
-                ImGui::Text("Function");
-                ImGui::PopStyleColor();
-
-                ImGui::SameLine();
-
-                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["function"]);
-                if (!line.function.empty()) {
-                    ImGui::Text("%s", line.function.c_str());
-                    COPY_POPUP(line.function.c_str(), line.function.c_str());
-                } else {
-                    ImGui::Text("<0x%08X>+0x%X", line.functionAddress, line.functionOffset);
-                }
-                ImGui::PopStyleColor();
-
-                if (!line.file.empty()) {
+                if (line.function.empty()) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                    ImGui::Text("- 0x%08X", line.address);
+                    COPY_POPUP(fmt::format("0x{:X}", line.address).c_str(),
+                               fmt::format("address_{:X}", line.address).c_str());
+                    ImGui::PopStyleColor();
+                } else if (ImGui::TreeNode(line.function.c_str())) {
                     ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
-                    ImGui::Text("File");
+                    ImGui::Text("Address");
                     ImGui::PopStyleColor();
 
                     ImGui::SameLine();
 
-                    auto lineStr = fmt::format("{}:{}", line.file, line.line);
-                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
-                    ImGui::Text("%s", lineStr.c_str());
+                    auto addressStr = fmt::format("{}+0x{:X} (0x{:X})", line.module.name, line.moduleOffset,
+                                                  line.address);
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                    ImGui::Text("%s", addressStr.c_str());
                     ImGui::PopStyleColor();
 
-                    COPY_POPUP(lineStr.c_str(), lineStr.c_str());
+                    COPY_POPUP(addressStr.c_str(), addressStr.c_str());
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                    ImGui::Text("Function");
+                    ImGui::PopStyleColor();
+
+                    ImGui::SameLine();
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["function"]);
+                    if (!line.function.empty()) {
+                        ImGui::Text("%s", line.function.c_str());
+                        COPY_POPUP(line.function.c_str(), line.function.c_str());
+                    } else {
+                        ImGui::Text("<0x%08X>+0x%X", line.functionAddress, line.functionOffset);
+                    }
+                    ImGui::PopStyleColor();
+
+                    if (!line.file.empty()) {
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                        ImGui::Text("File");
+                        ImGui::PopStyleColor();
+
+                        ImGui::SameLine();
+
+                        auto lineStr = fmt::format("{}:{}", line.file, line.line);
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
+                        ImGui::Text("%s", lineStr.c_str());
+                        ImGui::PopStyleColor();
+
+                        COPY_POPUP(lineStr.c_str(), lineStr.c_str());
+                    }
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                    ImGui::Text("Frame Pointer");
+                    ImGui::PopStyleColor();
+
+                    ImGui::SameLine();
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
+                    ImGui::Text("0x%08X", line.framePointer);
+                    ImGui::PopStyleColor();
+
+                    COPY_POPUP(fmt::format("0x{:X}", line.framePointer).c_str(),
+                               fmt::format("frame_{:X}", line.framePointer).c_str());
+
+                    ImGui::TreePop();
                 }
-
-                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
-                ImGui::Text("Frame Pointer");
                 ImGui::PopStyleColor();
-
-                ImGui::SameLine();
-
-                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
-                ImGui::Text("0x%08X", line.framePointer);
-                ImGui::PopStyleColor();
-
-                COPY_POPUP(fmt::format("0x{:X}", line.framePointer).c_str(), fmt::format("frame_{:X}", line.framePointer).c_str());
-
-                ImGui::TreePop();
             }
-            ImGui::PopStyleColor();
-        }
 
+        }
+        ImGui::End();
+    }
+
+    void disassemblyWindow() {
+        if (ImGui::Begin("Disassembly", nullptr, ImGuiWindowFlags_HorizontalScrollbar)) {
+
+            ImGui::Text("Disassembly is not implemented yet.");
+
+        }
         ImGui::End();
     }
 
