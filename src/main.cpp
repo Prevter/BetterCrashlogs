@@ -37,9 +37,9 @@ std::string getCrashReport() {
 __declspec(naked) void stepOutOfFunction() {
     // I don't know what I'm doing, just hoping this works lol
     __asm {
-            mov esp, ebp
-            pop ebp
-            ret
+        mov esp, ebp
+        pop ebp
+        ret
     }
 }
 
@@ -69,6 +69,10 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         crashReportFile << crashReport;
         crashReportFile.close();
         saved = true;
+
+        // Create empty "last-crashed" file to indicate that the game crashed
+        std::ofstream lastCrashedFile(crashReportDir / "last-crashed");
+        lastCrashedFile.close();
     }
 
     LONG result = EXCEPTION_CONTINUE_SEARCH;
@@ -132,10 +136,12 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
             auto &stackTrace = analyzer::getStackTrace();
             if (stackTrace.size() > 1) {
                 if (ImGui::MenuItem("Step Out")) {
-                    result = EXCEPTION_CONTINUE_SEARCH;
+                    result = EXCEPTION_CONTINUE_EXECUTION;
 
                     // Restore the context to the caller
                     ExceptionInfo->ContextRecord->Eip = reinterpret_cast<DWORD>(&stepOutOfFunction);
+                    ExceptionInfo->ContextRecord->Esp = stackTrace[1].framePointer;
+                    ExceptionInfo->ContextRecord->Ebp = stackTrace[1].framePointer;
 
                     window.close();
                 }
