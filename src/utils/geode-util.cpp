@@ -2,6 +2,7 @@
 #include <Geode/Geode.hpp>
 
 #include "memory.hpp"
+#include "../analyzer/4gb_patch.hpp"
 
 namespace utils::geode {
 
@@ -84,11 +85,13 @@ namespace utils::geode {
                 "- Loader Commit: {}\n"
                 "- Bindings Commit: {}\n"
                 "- Installed Mods: {} (Loaded: {}/{})\n"
+                "- 4GB Patch: {}\n"
                 "- Problems: {}{}",
                 wd, getLoaderVersion(), GEODE_STR(GEODE_GD_VERSION),
                 about::getLoaderCommitHash(), about::getBindingsCommitHash(),
-                getModCount(), getLoadedModCount(), getEnabledModCount(), problems.size(),
-                problems.empty() ? "" : fmt::format("\n{}", readProblems(problems))
+                getModCount(), getLoadedModCount(), getEnabledModCount(),
+                win32::four_gb::isPatched() ? "Patched" : "Not patched",
+                problems.size(), problems.empty() ? "" : fmt::format("\n{}", readProblems(problems))
         );
 
         return message;

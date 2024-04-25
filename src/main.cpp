@@ -7,6 +7,7 @@
 #include "utils/geode-util.hpp"
 #include "utils/utils.hpp"
 #include "analyzer/exception-codes.hpp"
+#include "analyzer/4gb_patch.hpp"
 #include "utils/config.hpp"
 
 std::string getCrashReport() {
@@ -150,6 +151,15 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                 if (ImGui::IsItemHovered()) {
                     ImGui::SetTooltip("Attempt to step out of the function that caused the exception.\n"
                                       "In most cases, this will just crash the game again.");
+                }
+            }
+
+            if (!win32::four_gb::isPatched()) {
+                if (ImGui::MenuItem("Apply 4GB Patch")) {
+                    win32::four_gb::patch();
+                }
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("Patch the game to use 4GB of memory.");
                 }
             }
 
