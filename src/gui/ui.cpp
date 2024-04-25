@@ -3,6 +3,7 @@
 #include "../analyzer/analyzer.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/geode-util.hpp"
+#include "../utils/config.hpp"
 
 #include <imgui.h>
 
@@ -94,6 +95,18 @@ namespace ui {
         colors[ImGuiCol_NavWindowingHighlight] = ImColor{IM_COL32(0xfb, 0xf1, 0xc7, 0xB2)};
         colors[ImGuiCol_NavWindowingDimBg] = ImColor{IM_COL32(0x7c, 0x6f, 0x64, 0x33)};
         colors[ImGuiCol_ModalWindowDimBg] = ImColor{IM_COL32(0x1d, 0x20, 0x21, 0x59)};
+    }
+
+    void resize() {
+        auto &cfg = config::get();
+
+        auto &io = ImGui::GetIO();
+        auto &style = ImGui::GetStyle();
+
+        //applyStyles();
+        // style.ScaleAllSizes(cfg.ui_scale);
+
+        io.FontGlobalScale = cfg.ui_scale;
     }
 
     void informationWindow() {

@@ -7,6 +7,7 @@
 #include "utils/geode-util.hpp"
 #include "utils/utils.hpp"
 #include "analyzer/exception-codes.hpp"
+#include "utils/config.hpp"
 
 std::string getCrashReport() {
     return fmt::format(
@@ -94,6 +95,7 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         io.FontDefault = ui::mainFont;
         io.MouseWheelFriction = 5.5f;
         ui::applyStyles();
+        ui::resize();
     }, [&]() {
         // Top-bar
         if (ImGui::BeginMainMenuBar()) {
@@ -149,6 +151,19 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                     ImGui::SetTooltip("Attempt to step out of the function that caused the exception.\n"
                                       "In most cases, this will just crash the game again.");
                 }
+            }
+
+            // Settings menu
+            if (ImGui::BeginMenu("Settings")) {
+                auto& cfg = config::get();
+
+                // Font scale
+                if (ImGui::DragFloat("Font Scale", &cfg.ui_scale, 0.01f, 0.5f, 2.0f)) {
+                    config::save();
+                    ui::resize();
+                }
+
+                ImGui::EndMenu();
             }
 
             ImGui::EndMainMenuBar();

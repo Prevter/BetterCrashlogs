@@ -11,6 +11,9 @@ namespace ui {
     /// @brief Applies the custom styles to the ImGui context
     void applyStyles();
 
+    /// @brief Resizes the UI based on the scale
+    void resize();
+
     /// @brief Inspirational messages that are displayed when the game crashes
     const char *const RANDOM_MESSAGES[] = {
         "Everything's going to plan. No, really, that was supposed to happen.",

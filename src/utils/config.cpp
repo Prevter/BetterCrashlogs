@@ -6,12 +6,13 @@
 #include <fstream>
 
 #include "geode-util.hpp"
+#include "../gui/ui.hpp"
 
 namespace config {
 
     Config& get() {
         static bool loaded = false;
-        static Config instance = { 50, 50, 1280, 720, false };
+        static Config instance = { 50, 50, 1280, 720, false, 1.f };
         if (!loaded) {
             loaded = true;
             load();
@@ -41,6 +42,7 @@ namespace config {
             else if (key == "window_w") config.window_w = std::stoi(value);
             else if (key == "window_h") config.window_h = std::stoi(value);
             else if (key == "window_maximized") config.window_maximized = value == "true";
+            else if (key == "ui_scale") config.ui_scale = std::stof(value);
         }
 
         file.close();
@@ -55,6 +57,7 @@ namespace config {
         file << "window_w=" << config.window_w << "\n";
         file << "window_h=" << config.window_h << "\n";
         file << "window_maximized=" << (config.window_maximized ? "true" : "false") << "\n";
+        file << "ui_scale=" << config.ui_scale << "\n";
 
         file.close();
     }

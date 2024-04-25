@@ -8,6 +8,7 @@ namespace config {
         int window_w;
         int window_h;
         bool window_maximized;
+        float ui_scale;
     };
 
     void load();
