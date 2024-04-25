@@ -7,6 +7,7 @@
 #include "utils/geode-util.hpp"
 #include "utils/utils.hpp"
 #include "analyzer/exception-codes.hpp"
+#include "analyzer/disassembler.hpp"
 #include "analyzer/4gb_patch.hpp"
 #include "utils/config.hpp"
 
@@ -125,8 +126,11 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                 geode::log::info("Attempting to continue the execution...");
                 result = EXCEPTION_CONTINUE_EXECUTION;
 
+                // Get the current instruction
+                auto &instruction = disasm::disassemble(ExceptionInfo->ContextRecord->Eip);
+
                 // Skip the instruction
-                ExceptionInfo->ContextRecord->Eip += 1;
+                ExceptionInfo->ContextRecord->Eip += instruction.size;
 
                 window.close();
             }
@@ -186,6 +190,7 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         ui::modsWindow();
         ui::stackWindow();
         ui::stackTraceWindow();
+        ui::disassemblyWindow();
 
     });
 

@@ -33,8 +33,11 @@ add_library(
 target_include_directories(imgui PUBLIC ${CMAKE_SOURCE_DIR}/thirdparty/imgui ${CMAKE_SOURCE_DIR}/thirdparty/imgui/backends)
 target_link_libraries(imgui PUBLIC opengl32 glfw)
 
+# Include Zydis
+add_subdirectory(thirdparty/zydis)
+
 # Link libraries
-target_link_libraries(${PROJECT_NAME} imgui glfw)
+target_link_libraries(${PROJECT_NAME} imgui glfw Zydis)
 
 if (NOT DEFINED ENV{GEODE_SDK})
     message(FATAL_ERROR "Unable to find Geode SDK! Please define GEODE_SDK environment variable to point to Geode")

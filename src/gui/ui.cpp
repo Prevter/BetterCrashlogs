@@ -3,6 +3,7 @@
 #include "../analyzer/analyzer.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/geode-util.hpp"
+#include "../analyzer/disassembler.hpp"
 #include "../utils/config.hpp"
 
 #include <imgui.h>
@@ -334,6 +335,8 @@ namespace ui {
         ImGui::End();
     }
 
+    uint32_t disassembledStackTraceIndex = 0;
+
     void stackTraceWindow() {
         if (ImGui::Begin("Stack Trace", nullptr, ImGuiWindowFlags_HorizontalScrollbar)) {
 
@@ -412,6 +415,15 @@ namespace ui {
                     COPY_POPUP(fmt::format("0x{:X}", line.framePointer).c_str(),
                                fmt::format("frame_{:X}", line.framePointer).c_str());
 
+                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                    if (ImGui::Button("Disassemble")) {
+                        auto index = std::distance(stackTrace.begin(), std::find_if(stackTrace.begin(), stackTrace.end(), [&line](const auto &x) {
+                            return x.address == line.address;
+                        }));
+                        disassembledStackTraceIndex = index;
+                    }
+                    ImGui::PopStyleColor();
+
                     ImGui::TreePop();
                 }
                 ImGui::PopStyleColor();
@@ -423,7 +435,65 @@ namespace ui {
 
     void disassemblyWindow() {
         if (ImGui::Begin("Disassembly", nullptr, ImGuiWindowFlags_HorizontalScrollbar)) {
-            ImGui::Text("Disassembly is not implemented yet.");
+            auto stackTrace = analyzer::getStackTrace();
+            if (stackTrace.empty()) {
+                ImGui::Text("No stack trace available.");
+                ImGui::End();
+                return;
+            }
+
+            auto stack = stackTrace[disassembledStackTraceIndex];
+            if (stack.function.address == 0) {
+                ImGui::Text("Cannot disassemble selected function.\nChoose another stack frame.");
+                ImGui::End();
+                return;
+            }
+
+            auto from = stack.address - stack.function.offset;
+            auto assembly = disasm::disassemble(from, stack.address + 0x20);
+
+            ImGui::Text("Function: %s", stack.function.toString().c_str());
+
+            ImGui::BeginTable("disassembly", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                                ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX |
+                                                ImGuiTableFlags_NoHostExtendY);
+            ImGui::TableSetupColumn("Address");
+            ImGui::TableSetupColumn("Bytes");
+            ImGui::TableSetupColumn("Instruction");
+            ImGui::TableHeadersRow();
+
+            for (int i = 0; i < assembly.size(); i++) {
+                auto ins = assembly[i];
+                ImGui::TableNextRow();
+
+                // Color the row red if the address is the next instruction
+                if (i + 1 < assembly.size() && assembly[i + 1].address == stack.address) {
+                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, IM_COL32(255, 0, 0, 100));
+                } else {
+                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, i % 2 == 0 ? IM_COL32(255, 255, 255, 8) : IM_COL32(0, 0, 0, 0));
+                }
+
+                ImGui::TableNextColumn();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
+                ImGui::Text("%08X", ins.address);
+                ImGui::PopStyleColor();
+
+                ImGui::TableNextColumn();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                ImGui::Text("%s", ins.bytes.c_str());
+                ImGui::PopStyleColor();
+
+                ImGui::TableNextColumn();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                ImGui::Text("%s", ins.text.c_str());
+                ImGui::PopStyleColor();
+            }
+
+            ImGui::EndTable();
+
         }
         ImGui::End();
     }

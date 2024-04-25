@@ -5,3 +5,6 @@
 	path = thirdparty/imgui
 	url = https://github.com/prevter/imgui
 	branch = docking
+[submodule "thirdparty/zydis"]
+	path = thirdparty/zydis
+	url = https://github.com/zyantific/zydis
