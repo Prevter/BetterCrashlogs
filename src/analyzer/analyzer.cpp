@@ -138,7 +138,7 @@ namespace analyzer {
         }
 
         if (name.empty()) {
-            return fmt::format("{}+0x{:X}", module, offset); // No function name
+            return fmt::format("{}+0x{:X}", module, address); // No function name
         }
 
         return fmt::format("{}+0x{:X} ({}+0x{:x})", module, address, name, offset);
