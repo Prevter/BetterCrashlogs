@@ -77,7 +77,10 @@ namespace utils::mem {
     inline uintptr_t findMethodStart(uintptr_t address, uintptr_t maxOffset = 0x1000) {
         uintptr_t offset = 0;
         while (offset < maxOffset) {
-            if (*(uint16_t*) (address - offset) == 0x55CC) {
+            uint16_t instruction = *(uint16_t*) (address - offset);
+            // int 3, (push ebp | jmp) sequence
+            // jmp is used because some functions may be hooked
+            if (instruction == 0x55CC || instruction == 0xE9CC) {
                 return address - offset + 1;
             }
             offset++;
