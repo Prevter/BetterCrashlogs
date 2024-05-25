@@ -24,6 +24,7 @@
 - [x] Motivational quotes (like in Minecraft)
 - [x] Base game method names (no more GeometryDash.exe+0x123456)
 - [x] Basic disassembly view (using Zydis)
+- [x] Terminate crashed threads without closing the game
 
 ## TODO
 - [ ] Fetch .pdb files from mod's GitHub repository (if available)

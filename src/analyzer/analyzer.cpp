@@ -184,26 +184,21 @@ namespace analyzer {
                 auto methodOffset = moduleOffset - methodInfo.first;
                 auto methodName = methodInfo.second;
                 if (methodName.empty()) {
-                    // return fmt::format("{}+0x{:X} <0x{:X}+{:x}>", moduleName, moduleOffset, methodInfo.first, methodOffset);
                     return {moduleName, moduleOffset, fmt::format("<0x{:x}>", methodInfo.first), methodOffset};
                 }
-                // return fmt::format("{} -> {}+0x{:X}", moduleName, methodName, methodOffset);
                 return {moduleName, moduleOffset, methodName, methodOffset};
             }
 
-            // return fmt::format("{}+0x{:X}", moduleName, moduleOffset);
             return {moduleName, moduleOffset, 0};
         }
 
         {
             auto methodStart = utils::mem::findMethodStart(address);
             if (methodStart == 0) {
-                // return fmt::format("{}+0x{:X}", moduleName, moduleOffset);
                 return {moduleName, moduleOffset, 0};
             }
             auto methodOffset = (uintptr_t) address - methodStart;
             methodStart -= (uintptr_t) module; // Get the offset from the module base
-            // return fmt::format("{}+0x{:X} <0x{:X}+{:x}>", moduleName, moduleOffset, methodStart, methodOffset);
             return {moduleName, moduleOffset, fmt::format("<0x{:x}>", methodStart), methodOffset};
         }
     }
