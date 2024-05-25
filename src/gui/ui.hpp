@@ -1,6 +1,7 @@
 #pragma once
 
 #include "imgui.h"
+#include "../analyzer/analyzer.hpp"
 
 namespace ui {
     /// @brief The main font used in the UI
@@ -39,25 +40,28 @@ namespace ui {
     /// @brief Picks a random quote from the list of inspirational messages and stores and always returns the same quote
     const char* pickRandomQuote();
 
+    /// @brief Picks a new random quote
+    void newQuote();
+
     /// @brief Contains the information about the exception that occurred
-    void informationWindow();
+    void informationWindow(analyzer::Analyzer& analyzer);
 
     /// @brief Contains the metadata about the game and mod loader
     void metadataWindow();
 
     /// @brief Contains the stack trace of the exception
-    void stackTraceWindow();
+    void stackTraceWindow(analyzer::Analyzer& analyzer);
 
     /// @brief Contains the registers of the exception
-    void registersWindow();
+    void registersWindow(analyzer::Analyzer& analyzer);
 
     /// @brief Contains a part of the stack found in the memory
-    void stackWindow();
+    void stackWindow(analyzer::Analyzer& analyzer);
 
     /// @brief Contains the list of installed/loaded mods
     void modsWindow();
 
     /// @brief Contains disassembled code around the exception
-    void disassemblyWindow();
+    void disassemblyWindow(analyzer::Analyzer& analyzer);
 
 }

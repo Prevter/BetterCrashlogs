@@ -28,3 +28,4 @@
 ## TODO
 - [ ] Fetch .pdb files from mod's GitHub repository (if available)
 - [ ] Add a settings menu to configure the theme/font size
+- [ ] Get class names for CCObject pointers

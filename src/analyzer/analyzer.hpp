@@ -13,19 +13,10 @@ namespace analyzer {
         uintptr_t baseAddress;
         uintptr_t size;
 
-        [[nodiscard]] bool contains(void* address) const {
-            return address >= (void*) baseAddress && address < (void*) (baseAddress + size);
+        [[nodiscard]] bool contains(void *address) const {
+            return address >= (void *) baseAddress && address < (void *) (baseAddress + size);
         }
     };
-
-    /// @brief Analyze the exception information.
-    void analyze(LPEXCEPTION_POINTERS info);
-
-    /// @brief Cleanup the analyzer.
-    void cleanup();
-
-    /// @brief Reload the analyzer.
-    void reload();
 
     enum class ValueType {
         // Unknown type
@@ -66,26 +57,6 @@ namespace analyzer {
         [[nodiscard]] std::string toString() const;
     };
 
-    /// @brief Get the value type of an address.
-    ValueType getValueType(uintptr_t address);
-
-    /// @brief Get the function information from an address.
-    MethodInfo getFunction(uintptr_t address);
-
-    /// @brief Get the string from an address.
-    std::string getString(uintptr_t address);
-
-    /// @brief Get the string from a pointer.
-    std::string getFromPointer(uintptr_t address, size_t depth = 0);
-
-    /// @brief Deduce the value from a pointer.
-    std::pair<ValueType, std::string> getValue(uintptr_t address);
-
-    /// @brief Get the exception message.
-    /// @note This function should be called after the analyze function.
-    /// @return The exception message that can be displayed to the user.
-    const std::string &getExceptionMessage();
-
     /// @brief A struct containing the state of a register.
     struct RegisterState {
         std::string name; // The name of the register (e.g. EAX, EBX, etc.)
@@ -94,35 +65,12 @@ namespace analyzer {
         std::string description; // A description of the value (User-friendly value of the register)
     };
 
-    /// @brief Get register states.
-    /// @note This function should be called after the analyze function.
-    /// @return The register states that can be displayed to the user.
-    const std::vector<RegisterState> &getRegisterStates();
-
-    /// @brief Get the CPU flags.
-    /// @note This function should be called after the analyze function.
-    /// @return The CPU flags that can be displayed to the user.
-    const std::map<std::string, bool> &getCpuFlags();
-
-    /// @brief Get the register state message.
-    /// @note This function should be called after the analyze function.
-    /// @return The register state message that can be displayed to the user.
-    const std::string& getRegisterStateMessage();
-
     struct StackLine {
         uintptr_t address;
         uintptr_t value;
         ValueType type;
         std::string description;
     };
-
-    /// @brief Get the stack allocated data. (Latest 32 entries)
-    /// @note This function should be called after the analyze function.
-    /// @return The stack data that can be displayed to the user.
-    const std::vector<StackLine>& getStackData();
-
-    /// @brief Get the information about the stack allocations.
-    const std::string& getStackAllocationsMessage();
 
     struct StackTraceLine {
         uintptr_t address{}; // Address of the function (absolute)
@@ -132,16 +80,96 @@ namespace analyzer {
         uintptr_t framePointer{}; // Stack frame pointer
     };
 
-    /// @brief Get the stack trace.
-    /// @note This function should be called after the analyze function.
-    /// @return The stack trace that can be displayed to the user.
-    const std::vector<StackTraceLine>& getStackTrace();
+    class Analyzer {
+    private:
+        LPEXCEPTION_POINTERS exceptionInfo = nullptr;
+        std::string threadInfo;
+        std::vector<ModuleInfo> modules;
+        bool debugSymbolsLoaded = false;
 
-    /// @brief Get the stack trace message.
-    /// @note This function should be called after the analyze function.
-    /// @return The stack trace message that can be displayed to the user.
-    const std::string& getStackTraceMessage();
+        std::string exceptionMessage;
+        std::vector<RegisterState> registerStates;
+        std::map<std::string, bool> cpuFlags;
+        std::vector<StackLine> stackData;
+        std::string stackAllocationsMessage;
+        std::vector<StackTraceLine> stackTrace;
+        std::string stackTraceMessage;
+        std::string registerStateMessage;
+        bool mainThreadCrash = false;
+    public:
 
-    /// @brief Check if the graphics driver crashed. (stack trace contains GPU driver dll)
-    bool isGraphicsDriverCrash();
+        /// @brief Analyze the exception information.
+        void analyze(LPEXCEPTION_POINTERS info);
+
+        /// @brief Cleanup the analyzer.
+        void cleanup();
+
+        /// @brief Reload the analyzer.
+        void reload();
+
+        /// @brief Get the value type of an address.
+        static ValueType getValueType(uintptr_t address);
+
+        /// @brief Get the function information from an address.
+        static MethodInfo getFunction(uintptr_t address);
+
+        /// @brief Get the string from an address.
+        static std::string getString(uintptr_t address);
+
+        /// @brief Get the string from a pointer.
+        std::string getFromPointer(uintptr_t address, size_t depth = 0);
+
+        /// @brief Deduce the value from a pointer.
+        std::pair<ValueType, std::string> getValue(uintptr_t address);
+
+        /// @brief Get the exception message.
+        /// @note This function should be called after the analyze function.
+        /// @return The exception message that can be displayed to the user.
+        const std::string &getExceptionMessage();
+
+        /// @brief Constructs a register state.
+        RegisterState setupRegisterState(const std::string &name, uintptr_t value);
+
+        /// @brief Get register states.
+        /// @note This function should be called after the analyze function.
+        /// @return The register states that can be displayed to the user.
+        const std::vector<RegisterState> &getRegisterStates();
+
+        /// @brief Get the CPU flags.
+        /// @note This function should be called after the analyze function.
+        /// @return The CPU flags that can be displayed to the user.
+        const std::map<std::string, bool> &getCpuFlags();
+
+        /// @brief Get the register state message.
+        /// @note This function should be called after the analyze function.
+        /// @return The register state message that can be displayed to the user.
+        const std::string &getRegisterStateMessage();
+
+        /// @brief Get the stack allocated data. (Latest 32 entries)
+        /// @note This function should be called after the analyze function.
+        /// @return The stack data that can be displayed to the user.
+        const std::vector<StackLine> &getStackData();
+
+        /// @brief Get the information about the stack allocations.
+        const std::string &getStackAllocationsMessage();
+
+        /// @brief Get the stack trace.
+        /// @note This function should be called after the analyze function.
+        /// @return The stack trace that can be displayed to the user.
+        const std::vector<StackTraceLine> &getStackTrace();
+
+        /// @brief Get the stack trace message.
+        /// @note This function should be called after the analyze function.
+        /// @return The stack trace message that can be displayed to the user.
+        const std::string &getStackTraceMessage();
+
+        /// @brief Check if the graphics driver crashed. (stack trace contains GPU driver dll)
+        bool isGraphicsDriverCrash();
+
+        /// @brief Get the module information from an address.
+        ModuleInfo *getModuleInfo(void *address);
+
+        /// @brief Check whether the crash happened in the main thread
+        bool isMainThread();
+    };
 }

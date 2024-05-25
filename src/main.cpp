@@ -11,7 +11,7 @@
 #include "analyzer/4gb_patch.hpp"
 #include "utils/config.hpp"
 
-std::string getCrashReport() {
+std::string getCrashReport(analyzer::Analyzer& analyzer) {
     return fmt::format(
             "{}\n{}\n\n"
             "== Geode Information ==\n"
@@ -29,11 +29,11 @@ std::string getCrashReport() {
             utils::getCurrentDateTime(),
             ui::pickRandomQuote(),
             utils::geode::getLoaderMetadataMessage(),
-            analyzer::getExceptionMessage(),
-            analyzer::getStackTraceMessage(),
-            analyzer::getRegisterStateMessage(),
+            analyzer.getExceptionMessage(),
+            analyzer.getStackTraceMessage(),
+            analyzer.getRegisterStateMessage(),
             utils::geode::getModListMessage(),
-            analyzer::getStackAllocationsMessage()
+            analyzer.getStackAllocationsMessage()
     );
 }
 
@@ -46,7 +46,28 @@ __declspec(naked) void stepOutOfFunction() {
     }
 }
 
+///@brief Dead thread is redirected to this function, which will terminate the thread
+__declspec(noreturn) void terminateThreadHandler() { ExitThread(0); }
+
+static bool needLayoutReload = false;
+void resetLayout(gui::ImGuiWindow* window) {
+    // tell imgui to reload the layout
+    needLayoutReload = true;
+    window->reload();
+}
+
 LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
+    static bool running = false;
+    static bool shouldClose = false;
+    static std::mutex mutex;
+
+    // if currently running, close the previous crashlog and wait for it to finish
+    if (running) shouldClose = true;
+
+    // Lock the mutex
+    std::lock_guard lock(mutex);
+    running = true;
+
     // Play a Windows error sound
     MessageBeep(MB_ICONERROR);
 
@@ -58,8 +79,10 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
     static const auto fontPath = (resourcesDir / "FantasqueSansMono.ttf").string();
 
     // Analyze the crash
-    analyzer::analyze(ExceptionInfo);
-    auto crashReport = getCrashReport();
+    ui::newQuote();
+    static analyzer::Analyzer analyzer;
+    analyzer.analyze(ExceptionInfo);
+    auto crashReport = getCrashReport(analyzer);
 
     // Save the crash report
     static bool saved = false;
@@ -81,7 +104,7 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
     LONG result = EXCEPTION_CONTINUE_SEARCH;
 
     // Check if that was a graphics driver crash (because window will draw white screen)
-    if (analyzer::isGraphicsDriverCrash()) {
+    if (analyzer.isGraphicsDriverCrash()) {
         // Fallback to MessageBox if the window doesn't work
         MessageBoxA(nullptr, crashReport.c_str(), "Something went wrong! ~ BetterCrashlogs fallback mode", MB_ICONERROR | MB_OK);
         return result;
@@ -90,6 +113,20 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
     // Create the window
     gui::ImGuiWindow window([]() {
         auto &io = ImGui::GetIO();
+
+        if (needLayoutReload) {
+            io.IniFilename = nullptr; // make it reload the layout
+
+            // replace the ini file with the default one
+            std::filesystem::remove(iniPath);
+            std::filesystem::copy(resourcesDir / "imgui.ini", iniPath);
+
+            // reload the layout
+            ImGui::LoadIniSettingsFromDisk(iniPath.c_str());
+
+            needLayoutReload = false;
+        }
+
         io.IniFilename = iniPath.c_str();
         auto characterRanges = io.Fonts->GetGlyphRangesCyrillic();
         ui::mainFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 14.0f, nullptr, characterRanges);
@@ -111,12 +148,18 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
             }
 
             if (ImGui::MenuItem("Restart Game")) {
-                geode::utils::game::restart();
+                // Terminate the thread, so the game can be restarted
+                if (!analyzer.isMainThread()) {
+                    result = EXCEPTION_CONTINUE_EXECUTION;
+                    ExceptionInfo->ContextRecord->Eip = reinterpret_cast<DWORD>(&terminateThreadHandler);
+                }
+
                 window.close();
+                geode::utils::game::restart();
             }
 
             if (ImGui::MenuItem("Reload Analyzer")) {
-                analyzer::reload();
+                analyzer.reload();
             }
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("Refresh the crash information (reload all debug symbols).");
@@ -140,7 +183,7 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
             }
 
             // This is kinda broken right now but eh?
-            auto &stackTrace = analyzer::getStackTrace();
+            auto &stackTrace = analyzer.getStackTrace();
             if (stackTrace.size() > 1) {
                 if (ImGui::MenuItem("Step Out")) {
                     result = EXCEPTION_CONTINUE_EXECUTION;
@@ -155,6 +198,18 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                 if (ImGui::IsItemHovered()) {
                     ImGui::SetTooltip("Attempt to step out of the function that caused the exception.\n"
                                       "In most cases, this will just crash the game again.");
+                }
+            }
+
+            if (!analyzer.isMainThread()) {
+                if (ImGui::MenuItem("Terminate Thread")) {
+                    geode::log::info("Terminating the thread...");
+                    result = EXCEPTION_CONTINUE_EXECUTION;
+                    ExceptionInfo->ContextRecord->Eip = reinterpret_cast<DWORD>(&terminateThreadHandler);
+                    window.close();
+                }
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("Terminate the thread that caused the exception.\n(Will close the crash handler, without closing the game)");
                 }
             }
 
@@ -177,6 +232,13 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                     ui::resize();
                 }
 
+                if (ImGui::MenuItem("Reset Layout")) {
+                    resetLayout(&window);
+                }
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("Reset all widgets to their default positions.");
+                }
+
                 ImGui::EndMenu();
             }
 
@@ -184,20 +246,29 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         }
 
         // Windows
-        ui::informationWindow();
+        ui::informationWindow(analyzer);
         ui::metadataWindow();
-        ui::registersWindow();
+        ui::registersWindow(analyzer);
         ui::modsWindow();
-        ui::stackWindow();
-        ui::stackTraceWindow();
-        ui::disassemblyWindow();
+        ui::stackWindow(analyzer);
+        ui::stackTraceWindow(analyzer);
+        ui::disassemblyWindow(analyzer);
 
+        // Close the window if the user requested it
+        if (shouldClose) {
+            result = EXCEPTION_CONTINUE_EXECUTION;
+            ExceptionInfo->ContextRecord->Eip = reinterpret_cast<DWORD>(&terminateThreadHandler);
+            window.close();
+        }
     });
 
     window.init();
     window.run();
 
-    analyzer::cleanup();
+    analyzer.cleanup();
+    shouldClose = false;
+    running = false;
+
     return result;
 }
 

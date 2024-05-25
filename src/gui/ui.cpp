@@ -1,6 +1,5 @@
 #include "ui.hpp"
 
-#include "../analyzer/analyzer.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/geode-util.hpp"
 #include "../analyzer/disassembler.hpp"
@@ -22,9 +21,16 @@ namespace ui {
             {"function", IM_COL32(245, 86, 119, 255)} /* pink */
     };
 
+    static int quoteIndex = -1; // -1 means uninitialized (we can reset to -1 to pick a new quote)
+
     const char *pickRandomQuote() {
-        static int quoteIndex = utils::randInt(0, RANDOM_MESSAGES_COUNT);
+        if (quoteIndex == -1) // First time
+            quoteIndex = utils::randInt(0, RANDOM_MESSAGES_COUNT);
         return RANDOM_MESSAGES[quoteIndex];
+    }
+
+    void newQuote() {
+        quoteIndex = -1;
     }
 
     void applyStyles() {
@@ -110,12 +116,12 @@ namespace ui {
         io.FontGlobalScale = cfg.ui_scale;
     }
 
-    void informationWindow() {
+    void informationWindow(analyzer::Analyzer& analyzer) {
         if (ImGui::Begin("Exception Information")) {
             ImGui::PushFont(titleFont);
             ImGui::TextWrapped("%s", pickRandomQuote());
             ImGui::PopFont();
-            ImGui::TextWrapped("%s", analyzer::getExceptionMessage().c_str());
+            ImGui::TextWrapped("%s", analyzer.getExceptionMessage().c_str());
         }
         ImGui::End();
     }
@@ -127,10 +133,10 @@ namespace ui {
         ImGui::End();
     }
 
-    void registersWindow() {
+    void registersWindow(analyzer::Analyzer& analyzer) {
         if (ImGui::Begin("Register States")) {
 
-            auto registers = analyzer::getRegisterStates();
+            auto registers = analyzer.getRegisterStates();
 
             // Create a table with the register states
             ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit |
@@ -194,7 +200,7 @@ namespace ui {
                 ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
                 ImGui::TableHeadersRow();
 
-                auto context = analyzer::getCpuFlags();
+                auto context = analyzer.getCpuFlags();
                 int i = 0;
                 for (const auto &[flag, value]: context) {
                     ImGui::TableNextColumn();
@@ -277,10 +283,10 @@ namespace ui {
         ImGui::End();
     }
 
-    void stackWindow() {
+    void stackWindow(analyzer::Analyzer& analyzer) {
         if (ImGui::Begin("Stack Allocations")) {
 
-            auto stackAlloc = analyzer::getStackData();
+            auto stackAlloc = analyzer.getStackData();
 
             // Create a table with the stack trace
             ImGui::BeginTable("stack", 3,
@@ -337,10 +343,10 @@ namespace ui {
 
     uint32_t disassembledStackTraceIndex = 0;
 
-    void stackTraceWindow() {
+    void stackTraceWindow(analyzer::Analyzer& analyzer) {
         if (ImGui::Begin("Stack Trace", nullptr, ImGuiWindowFlags_HorizontalScrollbar)) {
 
-            auto stackTrace = analyzer::getStackTrace();
+            auto stackTrace = analyzer.getStackTrace();
 
 #define COPY_POPUP(value, id)                        \
         if (ImGui::BeginPopupContextItem(id)) {      \
@@ -433,9 +439,9 @@ namespace ui {
         ImGui::End();
     }
 
-    void disassemblyWindow() {
+    void disassemblyWindow(analyzer::Analyzer& analyzer) {
         if (ImGui::Begin("Disassembly", nullptr, ImGuiWindowFlags_HorizontalScrollbar)) {
-            auto stackTrace = analyzer::getStackTrace();
+            auto stackTrace = analyzer.getStackTrace();
             if (stackTrace.empty()) {
                 ImGui::Text("No stack trace available.");
                 ImGui::End();

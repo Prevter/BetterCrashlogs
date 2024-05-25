@@ -113,12 +113,22 @@ namespace gui {
         glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        if (m_shouldReload) {
+            m_shouldReload = false;
+            onDestroy();
+            onInit();
+        }
     }
 
     void ImGuiWindow::onDestroy() {
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
+    }
+
+    void ImGuiWindow::reload() {
+        m_shouldReload = true;
     }
 
 }

@@ -9,20 +9,9 @@
 
 namespace analyzer {
 
-    static LPEXCEPTION_POINTERS exceptionInfo = nullptr;
-    static std::string threadInfo;
-    static std::vector<ModuleInfo> modules;
-    static bool debugSymbolsLoaded = false;
+    static HANDLE s_mainThread = GetCurrentThread();
 
-    static std::string exceptionMessage;
-    static std::vector<RegisterState> registerStates;
-    static std::map<std::string, bool> cpuFlags;
-    static std::vector<StackLine> stackData;
-    static std::string stackAllocationsMessage;
-    static std::vector<StackTraceLine> stackTrace;
-    static std::string stackTraceMessage;
-
-    void analyze(LPEXCEPTION_POINTERS info) {
+    void Analyzer::analyze(LPEXCEPTION_POINTERS info) {
         exceptionInfo = info;
 
         // Get all module handles
@@ -58,6 +47,9 @@ namespace analyzer {
                     std::wstring threadNameWStr(threadName);
                     std::string threadNameStr(threadNameWStr.begin(), threadNameWStr.end());
                     threadInfo = fmt::format("\"{}\" (ID: {})", threadNameStr, threadId);
+
+                    // Check if the crash happened on the main thread
+                    mainThreadCrash = threadNameStr == "Main";
                 } else {
                     threadInfo = fmt::format("(ID: {})", threadId);
                 }
@@ -67,7 +59,7 @@ namespace analyzer {
         }
     }
 
-    void cleanup() {
+    void Analyzer::cleanup() {
         // Unload debug symbols
         if (debugSymbolsLoaded) {
             SymCleanup(GetCurrentProcess());
@@ -84,12 +76,26 @@ namespace analyzer {
         stackTraceMessage.clear();
     }
 
-    void reload() {
+    void Analyzer::reload() {
         cleanup();
         analyze(exceptionInfo);
     }
 
-    const std::string &getExceptionMessage() {
+    uintptr_t getThreadStartAddress(HANDLE thread) {
+        // use ThreadQuerySetWin32StartAddress to get the start address of the thread
+        typedef NTSTATUS(NTAPI *pNtQueryInformationThread)(HANDLE, LONG, PVOID, ULONG, PULONG);
+        static auto NtQueryInformationThread = (pNtQueryInformationThread) GetProcAddress(
+                GetModuleHandleA("ntdll.dll"),
+                "NtQueryInformationThread");
+        if (!NtQueryInformationThread) return 0;
+
+        // get the thread start address
+        PVOID threadStartAddress;
+        NtQueryInformationThread(thread, 9, &threadStartAddress, sizeof(threadStartAddress), nullptr);
+        return (uintptr_t) threadStartAddress;
+    }
+
+    const std::string &Analyzer::getExceptionMessage() {
         if (!exceptionMessage.empty())
             return exceptionMessage;
 
@@ -98,13 +104,18 @@ namespace analyzer {
         auto extraInfo = exceptions::getExtraInfo(exceptionCode, exceptionInfo);
         auto parameters = exceptions::getParameters(exceptionCode, exceptionInfo);
 
+        // get thread start address
+        auto threadStartAddress = getThreadStartAddress(GetCurrentThread());
+        auto threadStartFunction = getFunction((uintptr_t) threadStartAddress);
+
         exceptionMessage = fmt::format(
                 "- Thread Information: {}\n"
+                "- Thread Start Address: {}\n"
                 "- Exception Code: {} (0x{:X})\n"
                 "- Exception Address: {}\n"
                 "- Exception Flags: 0x{:X}\n"
                 "- Exception Parameters: {}{}",
-                threadInfo,
+                threadInfo, threadStartFunction.toString(),
                 exceptionName, exceptionCode,
                 getFunction((uintptr_t) exceptionInfo->ExceptionRecord->ExceptionAddress).toString(),
                 exceptionInfo->ExceptionRecord->ExceptionFlags,
@@ -115,7 +126,7 @@ namespace analyzer {
         return exceptionMessage;
     }
 
-    ValueType getValueType(uintptr_t address) {
+    ValueType Analyzer::getValueType(uintptr_t address) {
         if (!utils::mem::isAccessible(address))
             return ValueType::Unknown;
 
@@ -144,7 +155,7 @@ namespace analyzer {
         return fmt::format("{}+0x{:X} ({}+0x{:x})", module, address, name, offset);
     }
 
-    MethodInfo getFunction(uintptr_t address) {
+    MethodInfo Analyzer::getFunction(uintptr_t address) {
         HMODULE module = utils::mem::getModuleHandle(address);
         if (module == nullptr) {
             return {0, address};
@@ -197,12 +208,12 @@ namespace analyzer {
         }
     }
 
-    std::string getString(uintptr_t address) {
+    std::string Analyzer::getString(uintptr_t address) {
         const char *str = (const char *) address;
         return fmt::format("&\"{}\"", str);
     }
 
-    std::string getFromPointer(uintptr_t address, size_t depth) {
+    std::string Analyzer::getFromPointer(uintptr_t address, size_t depth) {
         uintptr_t value = *(uintptr_t *) address;
 
         if (depth > 10) { // Prevent infinite recursion
@@ -223,7 +234,7 @@ namespace analyzer {
         }
     }
 
-    std::pair<ValueType, std::string> getValue(uintptr_t address) {
+    std::pair<ValueType, std::string> Analyzer::getValue(uintptr_t address) {
         switch (getValueType(address)) {
             case ValueType::Function:
                 return {ValueType::Function, getFunction(address).toString()};
@@ -236,12 +247,12 @@ namespace analyzer {
         }
     }
 
-    inline RegisterState setupRegisterState(const std::string &name, uintptr_t value) {
+    RegisterState Analyzer::setupRegisterState(const std::string &name, uintptr_t value) {
         auto valueResult = getValue(value);
         return {name, value, valueResult.first, valueResult.second};
     }
 
-    const std::vector<RegisterState> &getRegisterStates() {
+    const std::vector<RegisterState> &Analyzer::getRegisterStates() {
         if (!registerStates.empty())
             return registerStates;
 
@@ -262,8 +273,7 @@ namespace analyzer {
         return registerStates;
     }
 
-    const std::string &getRegisterStateMessage() {
-        static std::string registerStateMessage;
+    const std::string &Analyzer::getRegisterStateMessage() {
         if (!registerStateMessage.empty())
             return registerStateMessage;
 
@@ -298,7 +308,7 @@ namespace analyzer {
         return registerStateMessage;
     }
 
-    const std::map<std::string, bool> &getCpuFlags() {
+    const std::map<std::string, bool> &Analyzer::getCpuFlags() {
         if (!cpuFlags.empty())
             return cpuFlags;
 
@@ -318,7 +328,7 @@ namespace analyzer {
         return cpuFlags;
     }
 
-    const std::vector<StackLine> &getStackData() {
+    const std::vector<StackLine> &Analyzer::getStackData() {
         if (!stackData.empty())
             return stackData;
 
@@ -334,7 +344,7 @@ namespace analyzer {
         return stackData;
     }
 
-    const std::string &getStackAllocationsMessage() {
+    const std::string &Analyzer::getStackAllocationsMessage() {
         if (!stackAllocationsMessage.empty())
             return stackAllocationsMessage;
 
@@ -353,7 +363,7 @@ namespace analyzer {
         return stackAllocationsMessage;
     }
 
-    ModuleInfo *getModuleInfo(void *address) {
+    ModuleInfo *Analyzer::getModuleInfo(void *address) {
         for (auto &module: modules) {
             if (module.contains(address)) {
                 return &module;
@@ -362,7 +372,7 @@ namespace analyzer {
         return nullptr;
     }
 
-    const std::vector<StackTraceLine> &getStackTrace() {
+    const std::vector<StackTraceLine> &Analyzer::getStackTrace() {
         if (!stackTrace.empty())
             return stackTrace;
 
@@ -413,7 +423,7 @@ namespace analyzer {
         return stackTrace;
     }
 
-    const std::string &getStackTraceMessage() {
+    const std::string &Analyzer::getStackTraceMessage() {
         if (!stackTraceMessage.empty())
             return stackTraceMessage;
 
@@ -451,7 +461,7 @@ namespace analyzer {
         return stackTraceMessage;
     }
 
-    bool isGraphicsDriverCrash() {
+    bool Analyzer::isGraphicsDriverCrash() {
         // check latest 3 stack frames
         auto trace = getStackTrace();
         for (int i = 0; i < 3 && i < trace.size(); i++) {
@@ -463,6 +473,10 @@ namespace analyzer {
             }
         }
         return false;
+    }
+
+    bool Analyzer::isMainThread() {
+        return mainThreadCrash;
     }
 
 }

@@ -44,6 +44,9 @@ namespace gui {
         ImGuiWindow(std::function<void()> initCallback, std::function<void()> drawCallback)
             : m_initCallback(std::move(initCallback)), m_drawCallback(std::move(drawCallback)) {}
 
+        /// @brief Reload the ImGui context
+        void reload();
+
     protected:
         /// @brief Sets up ImGui context
         void onInit() override;
@@ -55,6 +58,7 @@ namespace gui {
     private:
         std::function<void()> m_initCallback;
         std::function<void()> m_drawCallback;
+        bool m_shouldReload = false;
     };
 
 }
