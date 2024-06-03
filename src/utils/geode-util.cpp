@@ -36,11 +36,11 @@ namespace utils::geode {
         std::string result;
 
         for (auto &problem: problems) {
-            std::variant<ghc::filesystem::path, ::geode::ModMetadata, ::geode::Mod *> cause = problem.cause;
+            std::variant<std::filesystem::path, ::geode::ModMetadata, ::geode::Mod *> cause = problem.cause;
             auto type = problemTypeToString(problem.type);
             std::string message = problem.message;
-            if (std::holds_alternative<ghc::filesystem::path>(cause)) {
-                auto path = std::get<ghc::filesystem::path>(cause);
+            if (std::holds_alternative<std::filesystem::path>(cause)) {
+                auto path = std::get<std::filesystem::path>(cause);
                 result += fmt::format("Type: {}\n"
                                       "Path: {}\n"
                                       "Message: {}\n\n",
@@ -120,15 +120,15 @@ namespace utils::geode {
     }
 
     std::filesystem::path getCrashlogsPath() {
-        return static_cast<std::filesystem::path::string_type &&>(::geode::dirs::getCrashlogsDir());
+        return ::geode::dirs::getCrashlogsDir();
     }
 
     std::filesystem::path getResourcesPath() {
-        return static_cast<std::filesystem::path::string_type &&>(::geode::Mod::get()->getResourcesDir());
+        return ::geode::Mod::get()->getResourcesDir();
     }
 
     std::filesystem::path getConfigPath() {
-        return static_cast<std::filesystem::path::string_type &&>(::geode::Mod::get()->getConfigDir());
+        return ::geode::Mod::get()->getConfigDir();
     }
 
     const std::vector<ModInfo> &getModList() {

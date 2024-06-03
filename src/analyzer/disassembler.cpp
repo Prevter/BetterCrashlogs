@@ -1,11 +1,19 @@
 #include "disassembler.hpp"
 
 #include <zydis/zydis.h>
+#include <fmt/format.h>
+#include <sstream>
+#include <unordered_map>
 
-#ifdef _WIN32 // Windows builds are x86
+#ifdef _WIN32
+#ifdef _WIN64
+#define TARGET_ARCH ZYDIS_MACHINE_MODE_LONG_64
+#define TARGET_ADDR_WIDTH ZYDIS_STACK_WIDTH_64
+#else
 #define TARGET_ARCH ZYDIS_MACHINE_MODE_LONG_COMPAT_32
 #define TARGET_ADDR_WIDTH ZYDIS_STACK_WIDTH_32
-#else // macOS builds are x64
+#endif
+#else
 #define TARGET_ARCH ZYDIS_MACHINE_MODE_LONG_64
 #define TARGET_ADDR_WIDTH ZYDIS_STACK_WIDTH_64
 #endif

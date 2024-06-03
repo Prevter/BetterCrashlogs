@@ -9,8 +9,15 @@
 
 namespace ui {
 
-    static ImFont *mainFont = nullptr;
-    static ImFont *titleFont = nullptr;
+    ImFont*& getMainFont() {
+        static ImFont *font = nullptr;
+        return font;
+    }
+
+    ImFont*& getTitleFont() {
+        static ImFont *font = nullptr;
+        return font;
+    }
 
     static std::unordered_map<const char *, ImU32> colorMap = {
             {"primary",  IM_COL32(183, 148, 246, 255)}, /* purple */
@@ -118,7 +125,7 @@ namespace ui {
 
     void informationWindow(analyzer::Analyzer& analyzer) {
         if (ImGui::Begin("Exception Information")) {
-            ImGui::PushFont(titleFont);
+            ImGui::PushFont(getMainFont());
             ImGui::TextWrapped("%s", pickRandomQuote());
             ImGui::PopFont();
             ImGui::TextWrapped("%s", analyzer.getExceptionMessage().c_str());
@@ -162,7 +169,7 @@ namespace ui {
                     } else {
                         ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
                     }
-                    ImGui::Text("%08X", reg.value);
+                    ImGui::Text("%08llX", reg.value);
                     ImGui::PopStyleColor();
 
                     ImGui::TableNextColumn();

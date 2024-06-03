@@ -1,6 +1,7 @@
-#include <utility>
-
 #pragma once
+
+#include <utility>
+#include <functional>
 
 namespace gui {
 

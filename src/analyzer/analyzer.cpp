@@ -162,7 +162,7 @@ namespace analyzer {
         }
 
         auto moduleName = utils::mem::getModuleName(module);
-        auto moduleOffset = (uintptr_t) address - reinterpret_cast<DWORD>(module);
+        auto moduleOffset = (uintptr_t) address - reinterpret_cast<uintptr_t>(module);
 
         if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                               (LPCTSTR) address, &module)) {
@@ -253,6 +253,7 @@ namespace analyzer {
 
         CONTEXT context = *exceptionInfo->ContextRecord;
         registerStates = {
+#ifndef _WIN64
                 setupRegisterState("EAX", context.Eax),
                 setupRegisterState("EBX", context.Ebx),
                 setupRegisterState("ECX", context.Ecx),
@@ -263,6 +264,27 @@ namespace analyzer {
                 setupRegisterState("ESP", context.Esp),
 
                 setupRegisterState("EIP", context.Eip),
+#else
+                setupRegisterState("RAX", context.Rax),
+                setupRegisterState("RBX", context.Rbx),
+                setupRegisterState("RCX", context.Rcx),
+                setupRegisterState("RDX", context.Rdx),
+                setupRegisterState("RBP", context.Rbp),
+                setupRegisterState("RSP", context.Rsp),
+                setupRegisterState("RDI", context.Rdi),
+                setupRegisterState("RSI", context.Rsi),
+
+                setupRegisterState("R8", context.R8),
+                setupRegisterState("R9", context.R9),
+                setupRegisterState("R10", context.R10),
+                setupRegisterState("R11", context.R11),
+                setupRegisterState("R12", context.R12),
+                setupRegisterState("R13", context.R13),
+                setupRegisterState("R14", context.R14),
+                setupRegisterState("R15", context.R15),
+
+                setupRegisterState("RIP", context.Rip),
+#endif
         };
 
         return registerStates;
@@ -328,7 +350,11 @@ namespace analyzer {
             return stackData;
 
         CONTEXT context = *exceptionInfo->ContextRecord;
+#ifndef _WIN64
         uintptr_t stackPointer = context.Esp;
+#else
+        uintptr_t stackPointer = context.Rsp;
+#endif
         for (int i = 0; i < 32; i++) {
             uintptr_t address = stackPointer + i * sizeof(uintptr_t);
             uintptr_t value = *(uintptr_t *) address;
@@ -377,12 +403,21 @@ namespace analyzer {
         auto ctx = exceptionInfo->ContextRecord;
 
         DWORD machineType = IMAGE_FILE_MACHINE_I386;
+#if _WIN64
+        stackFrame.AddrPC.Offset = ctx->Rip;
+        stackFrame.AddrPC.Mode = AddrModeFlat;
+        stackFrame.AddrFrame.Offset = ctx->Rbp;
+        stackFrame.AddrFrame.Mode = AddrModeFlat;
+        stackFrame.AddrStack.Offset = ctx->Rsp;
+        stackFrame.AddrStack.Mode = AddrModeFlat;
+#else
         stackFrame.AddrPC.Offset = ctx->Eip;
         stackFrame.AddrPC.Mode = AddrModeFlat;
         stackFrame.AddrFrame.Offset = ctx->Ebp;
         stackFrame.AddrFrame.Mode = AddrModeFlat;
         stackFrame.AddrStack.Offset = ctx->Esp;
         stackFrame.AddrStack.Mode = AddrModeFlat;
+#endif
 
         HANDLE process = GetCurrentProcess();
         HANDLE thread = GetCurrentThread();

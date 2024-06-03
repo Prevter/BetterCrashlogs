@@ -3,6 +3,10 @@
 #include <Windows.h>
 
 #include <utility>
+#include <vector>
+#include <map>
+#include <array>
+#include <string>
 
 namespace analyzer {
 
@@ -80,6 +84,15 @@ namespace analyzer {
         uintptr_t framePointer{}; // Stack frame pointer
     };
 
+    struct XmmRegister {
+        std::string name;
+        std::string value;
+        std::array<float, 4> floats;
+
+        XmmRegister(std::string name, std::array<float, 4> floats, std::string value)
+                : name(std::move(name)), floats(std::move(floats)), value(std::move(value)) {}
+    };
+
     class Analyzer {
     private:
         LPEXCEPTION_POINTERS exceptionInfo = nullptr;
@@ -90,6 +103,7 @@ namespace analyzer {
         std::string exceptionMessage;
         std::vector<RegisterState> registerStates;
         std::map<std::string, bool> cpuFlags;
+        std::vector<XmmRegister> xmmRegisters;
         std::vector<StackLine> stackData;
         std::string stackAllocationsMessage;
         std::vector<StackTraceLine> stackTrace;

@@ -5,9 +5,10 @@
 
 namespace ui {
     /// @brief The main font used in the UI
-    extern ImFont* mainFont;
+    ImFont*& getMainFont();
+
     /// @brief The title font used in the UI
-    extern ImFont* titleFont;
+    ImFont*& getTitleFont();
 
     /// @brief Applies the custom styles to the ImGui context
     void applyStyles();

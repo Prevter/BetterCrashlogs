@@ -37,6 +37,15 @@ std::string getCrashReport(analyzer::Analyzer& analyzer) {
     );
 }
 
+inline void setProgramCounter(PCONTEXT context, uintptr_t address) {
+#ifdef _WIN64
+    context->Rip = address;
+#else
+    context->Eip = address;
+#endif
+}
+
+#ifndef _WIN64
 __declspec(naked) void stepOutOfFunction() {
     // I don't know what I'm doing, just hoping this works lol
     __asm {
@@ -45,6 +54,7 @@ __declspec(naked) void stepOutOfFunction() {
         ret
     }
 }
+#endif
 
 ///@brief Dead thread is redirected to this function, which will terminate the thread
 __declspec(noreturn) void terminateThreadHandler() { ExitThread(0); }
@@ -129,9 +139,9 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
 
         io.IniFilename = iniPath.c_str();
         auto characterRanges = io.Fonts->GetGlyphRangesCyrillic();
-        ui::mainFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 14.0f, nullptr, characterRanges);
-        ui::titleFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 22.0f, nullptr, characterRanges);
-        io.FontDefault = ui::mainFont;
+        ui::getMainFont() = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 14.0f, nullptr, characterRanges);
+        ui::getTitleFont() = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 22.0f, nullptr, characterRanges);
+        io.FontDefault = ui::getMainFont();
         io.MouseWheelFriction = 5.5f;
         ui::applyStyles();
         ui::resize();
@@ -151,7 +161,8 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                 // Terminate the thread, so the game can be restarted
                 if (!analyzer.isMainThread()) {
                     result = EXCEPTION_CONTINUE_EXECUTION;
-                    ExceptionInfo->ContextRecord->Eip = reinterpret_cast<DWORD>(&terminateThreadHandler);
+                    setProgramCounter(ExceptionInfo->ContextRecord,
+                                      reinterpret_cast<uintptr_t>(&terminateThreadHandler));
                 }
 
                 window.close();
@@ -169,11 +180,14 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                 geode::log::info("Attempting to continue the execution...");
                 result = EXCEPTION_CONTINUE_EXECUTION;
 
-                // Get the current instruction
+                // Get the current instruction and increment the program counter
+#ifndef _WIN64
                 auto &instruction = disasm::disassemble(ExceptionInfo->ContextRecord->Eip);
-
-                // Skip the instruction
                 ExceptionInfo->ContextRecord->Eip += instruction.size;
+#else
+                auto &instruction = disasm::disassemble(ExceptionInfo->ContextRecord->Rip);
+                ExceptionInfo->ContextRecord->Rip += instruction.size;
+#endif
 
                 window.close();
             }
@@ -182,6 +196,7 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                                   "In most cases, this will just crash the game again.");
             }
 
+#ifndef _WIN64
             // This is kinda broken right now but eh?
             auto &stackTrace = analyzer.getStackTrace();
             if (stackTrace.size() > 1) {
@@ -200,12 +215,13 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                                       "In most cases, this will just crash the game again.");
                 }
             }
+#endif
 
             if (!analyzer.isMainThread()) {
                 if (ImGui::MenuItem("Terminate Thread")) {
                     geode::log::info("Terminating the thread...");
                     result = EXCEPTION_CONTINUE_EXECUTION;
-                    ExceptionInfo->ContextRecord->Eip = reinterpret_cast<DWORD>(&terminateThreadHandler);
+                    setProgramCounter(ExceptionInfo->ContextRecord, reinterpret_cast<uintptr_t>(&terminateThreadHandler));
                     window.close();
                 }
                 if (ImGui::IsItemHovered()) {
@@ -257,7 +273,7 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         // Close the window if the user requested it
         if (shouldClose) {
             result = EXCEPTION_CONTINUE_EXECUTION;
-            ExceptionInfo->ContextRecord->Eip = reinterpret_cast<DWORD>(&terminateThreadHandler);
+            setProgramCounter(ExceptionInfo->ContextRecord, reinterpret_cast<uintptr_t>(&terminateThreadHandler));
             window.close();
         }
     });
@@ -280,6 +296,8 @@ $execute {
     if (!std::filesystem::exists(iniPath)) {
         std::filesystem::copy(resourcesDir / "imgui.ini", iniPath);
     }
+
+    geode::log::info("Setting up crash handler...");
 
     AddVectoredExceptionHandler(0, [](PEXCEPTION_POINTERS ExceptionInfo) -> LONG {
         auto exceptionCode = ExceptionInfo->ExceptionRecord->ExceptionCode;

@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <Windows.h>
 #include <psapi.h>
+#include <fmt/format.h>
+#include <filesystem>
 
 namespace utils::mem {
 
@@ -77,12 +79,20 @@ namespace utils::mem {
     inline uintptr_t findMethodStart(uintptr_t address, uintptr_t maxOffset = 0x1000) {
         uintptr_t offset = 0;
         while (offset < maxOffset) {
+            #ifndef _WIN64
             uint16_t instruction = *(uint16_t*) (address - offset);
             // int 3, (push ebp | jmp) sequence
             // jmp is used because some functions may be hooked
             if (instruction == 0x55CC || instruction == 0xE9CC) {
                 return address - offset + 1;
             }
+            #else
+            uint8_t instruction = *(uint8_t*) (address - offset);
+            // int 3
+            if (instruction == 0xCC) {
+                return address - offset + 1;
+            }
+            #endif
             offset++;
         }
         return 0;

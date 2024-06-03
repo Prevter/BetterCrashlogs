@@ -1,5 +1,10 @@
 #include "exception-codes.hpp"
 
+#include <fmt/format.h>
+#include <sstream>
+#include <stdexcept>
+#include <Windows.h>
+
 namespace analyzer::exceptions {
 
     const char *getName(DWORD exceptionCode) {

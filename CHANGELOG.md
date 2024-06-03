@@ -1,3 +1,6 @@
+## v1.4.0
+- 64-bit support!
+
 ## v1.3.0
 - Fix crash when getting two or more crashes (how ironic)
 - Added a button to terminate a crashed thread

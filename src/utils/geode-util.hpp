@@ -1,5 +1,12 @@
 #pragma once
 
+#include <Geode/Geode.hpp>
+#include <filesystem>
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include <cstdint>
+
 #define GEODE_DLL __declspec(dllimport)
 
 // Import the necessary functions from the Geode.dll
