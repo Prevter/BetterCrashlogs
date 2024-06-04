@@ -1,6 +1,6 @@
 {
 	"geode": "2.0.0-beta.27",
-	"gd": "2.206",
+	"gd": { "win": "2.206" },
 	"version": "v1.4.0",
 	"id": "prevter.bettercrash",
 	"name": "BetterCrashlogs",

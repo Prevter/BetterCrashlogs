@@ -68,6 +68,11 @@ namespace utils::geode {
         return result;
     }
 
+    const std::string &getGameVersion() {
+        static std::string version = ::geode::Loader::get()->getGameVersion();
+        return version;
+    }
+
     const std::string &getLoaderMetadataMessage() {
         static std::string message;
         if (!message.empty()) {
@@ -87,7 +92,7 @@ namespace utils::geode {
                 "- Installed Mods: {} (Loaded: {}/{})\n"
                 "- 4GB Patch: {}\n"
                 "- Problems: {}{}",
-                wd, getLoaderVersion(), GEODE_STR(GEODE_GD_VERSION),
+                wd, getLoaderVersion(), getGameVersion(),
                 about::getLoaderCommitHash(), about::getBindingsCommitHash(),
                 getModCount(), getLoadedModCount(), getEnabledModCount(),
                 win32::four_gb::isPatched() ? "Patched" : "Not patched",
@@ -98,7 +103,7 @@ namespace utils::geode {
     }
 
     std::string getLoaderVersion() {
-        return ::geode::Loader::get()->getVersion().toString();
+        return ::geode::Loader::get()->getVersion().toVString();
     }
 
     uint32_t getModCount() {

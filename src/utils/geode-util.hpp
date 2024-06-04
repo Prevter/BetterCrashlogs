@@ -22,6 +22,9 @@ namespace utils::geode {
     /// @brief Returns a formatted string containing metadata about the loader.
     const std::string& getLoaderMetadataMessage();
 
+    /// @brief Returns the version of the game.
+    const std::string &getGameVersion();
+
     /// @brief Returns the version of the loader.
     std::string getLoaderVersion();
 
