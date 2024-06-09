@@ -32,7 +32,19 @@ namespace ui {
         "Don't do that.", "Ouch. That hurt :(", "You're mean.",
         "But it works on my machine.", "Hi Absolute!", "The chicken is on fire!",
         "I've accidentally crashed the game! /RubRub", "It's a feature, not a bug!",
-        "Try turning it off and on again.", "Boo!", "Whoopsies! An unhandled exception has occurred."
+        "Try turning it off and on again.", "Boo!", "Whoopsies! An unhandled exception has occurred.",
+        "Geometry Dash isn't Geometry Dashing anymore", "Now in 64 bits!",
+        "$ sudo rm -rf /", "To the mod developer: Please 309 yourself",
+        "Let's pretend this didn't happen.", "I hope it's not GJRobotSprite::init this time",
+        "Skill issue", "Out of cheese error.", "Error 404: Fun not found.",
+        "A wild bug appeared!", "Congratulations! You found a bug.",
+        "Don't panic! It's just a minor setback.", "Cosmic rays caused a bit flip, sorry!",
+        "I'm not crying, you're crying.", "Insert witty error message here.",
+        "Mission failed successfully.", "Game over. Insert coin to continue.",
+        "You shall not pass! Oh wait, you did...", "The cake is a lie!",
+        "Quick, look over there! *runs away*", "To be continued...",
+        "In case of fire, use water.", "Did you try blowing on the cartridge?",
+        "You found an easter egg! Just kidding, it's a crash."
     };
 
     /// @brief The number of inspirational messages

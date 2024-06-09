@@ -125,7 +125,7 @@ namespace ui {
 
     void informationWindow(analyzer::Analyzer& analyzer) {
         if (ImGui::Begin("Exception Information")) {
-            ImGui::PushFont(getMainFont());
+            ImGui::PushFont(getTitleFont());
             ImGui::TextWrapped("%s", pickRandomQuote());
             ImGui::PopFont();
             ImGui::TextWrapped("%s", analyzer.getExceptionMessage().c_str());
