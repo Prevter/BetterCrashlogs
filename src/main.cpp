@@ -10,6 +10,8 @@
 #include "analyzer/disassembler.hpp"
 #include "analyzer/4gb_patch.hpp"
 #include "utils/config.hpp"
+#include "utils/sigscan.hpp"
+#include "utils/memory.hpp"
 
 std::string getCrashReport(analyzer::Analyzer& analyzer) {
     return fmt::format(
@@ -339,6 +341,15 @@ $execute {
 
         }
     });
+    // Patch Geode.dll to disable its own crash handler
+    auto patch1 = sigscan::findPattern("813863736DE0^", "Geode.dll"); // continueHandler
+    auto patch2 = sigscan::findPattern("4839F8^7508", "Geode.dll");   // exceptionHandler
+    if (patch1 && patch2) {
+        geode::log::info("Patching Geode.dll to disable its own crash handler...");
+        utils::mem::writeMemory(patch1, "\xEB", 1);
+        utils::mem::writeMemory(patch2, "\xEB", 1);
+    }
+
     geode::log::info("Setting up crash handler...");
     AddVectoredExceptionHandler(0, ExceptionHandler);
     AddVectoredContinueHandler(0, ContinueHandler);

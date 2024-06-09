@@ -98,4 +98,19 @@ namespace utils::mem {
         return 0;
     }
 
+    /// @brief Write memory to an address.
+    /// @param address The address to write to.
+    /// @param buffer The buffer to write.
+    /// @param size The size of the buffer.
+    /// @return Whether the write was successful.
+    inline bool writeMemory(uintptr_t address, const void* buffer, size_t size) {
+        DWORD oldProtect;
+        if (!VirtualProtect((void*) address, size, PAGE_EXECUTE_READWRITE, &oldProtect)) {
+            return false;
+        }
+        memcpy((void*) address, buffer, size);
+        VirtualProtect((void*) address, size, oldProtect, &oldProtect);
+        return true;
+    }
+
 }
