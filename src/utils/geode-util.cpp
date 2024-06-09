@@ -231,7 +231,7 @@ namespace utils::geode {
             return functions;
         }
 
-        auto codegenPath = getResourcesPath() / "CodegenData.txt";
+        auto codegenPath = getConfigPath() / fmt::format("codegen-{}.txt", getGameVersion());
         if (!std::filesystem::exists(codegenPath)) {
             return functions;
         }
@@ -276,6 +276,5 @@ namespace utils::geode {
 
         return it == functions.end() ? std::make_pair(methodStart, "") : *it;
     }
-
 
 }

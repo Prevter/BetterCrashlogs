@@ -50,8 +50,8 @@ add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 setup_geode_mod(${PROJECT_NAME})
 
 # Copy CodegenData.txt to resources on build
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${CMAKE_BINARY_DIR}/bindings/bindings/Geode/CodegenData.txt
-    ${CMAKE_SOURCE_DIR}/resources/CodegenData.txt
-)
+#add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+#    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#    ${CMAKE_BINARY_DIR}/bindings/bindings/Geode/CodegenData.txt
+#    ${CMAKE_SOURCE_DIR}/resources/CodegenData.txt
+#)

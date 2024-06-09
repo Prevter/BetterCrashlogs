@@ -1,4 +1,6 @@
 #include <Geode/Geode.hpp>
+#include <Geode/utils/web.hpp>
+#include <Geode/loader/Event.hpp>
 #include <imgui.h>
 
 #include "analyzer/analyzer.hpp"
@@ -67,6 +69,8 @@ void resetLayout(gui::ImGuiWindow* window) {
     needLayoutReload = true;
     window->reload();
 }
+
+geode::EventListener<::geode::utils::web::WebTask> s_listener;
 
 LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
     static bool running = false;
@@ -338,9 +342,31 @@ $execute {
         std::filesystem::copy(resourcesDir / "imgui.ini", iniPath);
     }
 
+    s_listener.bind([] (::geode::utils::web::WebTask::Event* e) {
+        if (::geode::utils::web::WebResponse* res = e->getValue()) {
+            // Check if the request was successful
+            auto data = res->string().unwrapOr("");
+            if (data.empty()) return;
 
+            // Save the codegen file
+            auto path = utils::geode::getConfigPath() / fmt::format("codegen-{}.txt", utils::geode::getGameVersion());
+            std::ofstream file(path);
+            file << data;
+            file.close();
+
+            geode::log::info("Successfully fetched codegen file for version {}", utils::geode::getGameVersion());
         }
     });
+
+    // Fetch codegen file once every 4 hours
+    if (geode::Mod::get()->getSavedValue<time_t>("codegen_fetch_time", 0) + 14400 < time(nullptr)) {
+        geode::Mod::get()->setSavedValue("codegen_fetch_time", time(nullptr));
+        geode::log::info("Fetching codegen file...");
+        auto codegenPath = configDir / fmt::format("codegen-{}.txt", utils::geode::getGameVersion());
+        auto req = geode::utils::web::WebRequest();
+        s_listener.setFilter(req.get(fmt::format("https://prevter.github.io/bindings-meta/Win32-{}.txt", utils::geode::getGameVersion())));
+    }
+
     // Patch Geode.dll to disable its own crash handler
     auto patch1 = sigscan::findPattern("813863736DE0^", "Geode.dll"); // continueHandler
     auto patch2 = sigscan::findPattern("4839F8^7508", "Geode.dll");   // exceptionHandler
