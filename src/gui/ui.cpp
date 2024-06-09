@@ -148,7 +148,7 @@ namespace ui {
             // Create a table with the register states
             ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit |
                                     ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_ScrollX;
-            ImVec2 size = ImVec2(0, 11 * ImGui::GetTextLineHeightWithSpacing());
+            ImVec2 size = ImVec2(0, static_cast<int>(registers.size() + 2) * ImGui::GetTextLineHeightWithSpacing());
             if (ImGui::BeginTable("registers", 3, flags, size)) {
                 ImGui::TableSetupColumn("Name");
                 ImGui::TableSetupColumn("Value");
@@ -193,6 +193,40 @@ namespace ui {
                 }
 
                 ImGui::EndTable();
+            }
+
+            // XMM registers
+            auto xmmRegisters = analyzer.getXmmRegisters();
+            size = ImVec2(0, static_cast<int>(xmmRegisters.size() + 2) * ImGui::GetTextLineHeightWithSpacing());
+            if (!xmmRegisters.empty()) {
+                if (ImGui::BeginTable("xmm_registers", 3, flags, size)) {
+                    ImGui::TableSetupColumn("Name");
+                    ImGui::TableSetupColumn("Value");
+                    ImGui::TableSetupColumn("Floats");
+                    ImGui::TableHeadersRow();
+
+                    for (const auto &reg: xmmRegisters) {
+                        ImGui::TableNextColumn();
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
+                        ImGui::Text("%s", reg.name.c_str());
+                        ImGui::PopStyleColor();
+
+                        ImGui::TableNextColumn();
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["pointer"]);
+                        ImGui::Text("%s", reg.value.c_str());
+                        ImGui::PopStyleColor();
+
+                        ImGui::TableNextColumn();
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
+                        ImGui::Text("%f | %f | %f | %f", reg.floats[3], reg.floats[2], reg.floats[1], reg.floats[0]);
+                        ImGui::PopStyleColor();
+                    }
+
+                    ImGui::EndTable();
+                }
             }
 
             // Flags table

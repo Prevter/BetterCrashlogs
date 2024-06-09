@@ -90,7 +90,7 @@ namespace analyzer {
         std::array<float, 4> floats;
 
         XmmRegister(std::string name, std::array<float, 4> floats, std::string value)
-                : name(std::move(name)), floats(std::move(floats)), value(std::move(value)) {}
+                : name(std::move(name)), floats(floats), value(std::move(value)) {}
     };
 
     class Analyzer {
@@ -148,6 +148,11 @@ namespace analyzer {
         /// @note This function should be called after the analyze function.
         /// @return The register states that can be displayed to the user.
         const std::vector<RegisterState> &getRegisterStates();
+
+        /// @brief Get the XMM registers.
+        /// @note This function should be called after the analyze function.
+        /// @return The XMM registers that can be displayed to the user.
+        const std::vector<XmmRegister> &getXmmRegisters();
 
         /// @brief Get the CPU flags.
         /// @note This function should be called after the analyze function.

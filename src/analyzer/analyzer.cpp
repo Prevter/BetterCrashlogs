@@ -302,6 +302,16 @@ namespace analyzer {
             );
         }
 
+        // xmm registers
+        auto xmms = getXmmRegisters();
+        for (const auto &xmm: xmms) {
+            registerStateMessage += fmt::format(
+                    "- {}: {} ({} | {} | {} | {})\n",
+                    xmm.name, xmm.value,
+                    xmm.floats[3], xmm.floats[2], xmm.floats[1], xmm.floats[0]
+            );
+        }
+
         // fix 3 flags per line
         auto flags = getCpuFlags();
         int i = 0;
@@ -323,6 +333,34 @@ namespace analyzer {
         }
 
         return registerStateMessage;
+    }
+
+    inline XmmRegister constructXmmRegister(int index, M128A xmm) {
+        std::array<float, 4> floats = reinterpret_cast<std::array<float, 4> &>(xmm);
+        return {
+            fmt::format("XMM{}", index),
+            floats,
+            fmt::format("{:016X} {:016X}", xmm.High, xmm.Low),
+        };
+    }
+
+    const std::vector<XmmRegister> &Analyzer::getXmmRegisters() {
+        if (!xmmRegisters.empty())
+            return xmmRegisters;
+
+        CONTEXT context = *exceptionInfo->ContextRecord;
+        xmmRegisters = {
+                constructXmmRegister(0, context.Xmm0),
+                constructXmmRegister(1, context.Xmm1),
+                constructXmmRegister(2, context.Xmm2),
+                constructXmmRegister(3, context.Xmm3),
+                constructXmmRegister(4, context.Xmm4),
+                constructXmmRegister(5, context.Xmm5),
+                constructXmmRegister(6, context.Xmm6),
+                constructXmmRegister(7, context.Xmm7),
+        };
+
+        return xmmRegisters;
     }
 
     const std::map<std::string, bool> &Analyzer::getCpuFlags() {
