@@ -310,7 +310,7 @@ namespace ui {
                 ImGui::TableNextColumn();
 
                 ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
-                ImGui::Text("%08X", line.address);
+                ImGui::Text("%08llX", line.address);
                 ImGui::PopStyleColor();
 
                 ImGui::TableNextColumn();
@@ -320,7 +320,7 @@ namespace ui {
                 } else {
                     ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
                 }
-                ImGui::Text("%08X", line.value);
+                ImGui::Text("%08llX", line.value);
                 ImGui::PopStyleColor();
 
                 ImGui::TableNextColumn();
@@ -422,7 +422,7 @@ namespace ui {
                     ImGui::SameLine();
 
                     ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
-                    ImGui::Text("0x%08X", line.framePointer);
+                    ImGui::Text("0x%08llX", line.framePointer);
                     ImGui::PopStyleColor();
 
                     COPY_POPUP(fmt::format("0x{:X}", line.framePointer).c_str(),
@@ -489,7 +489,7 @@ namespace ui {
                 ImGui::TableNextColumn();
 
                 ImGui::PushStyleColor(ImGuiCol_Text, colorMap["address"]);
-                ImGui::Text("%08X", ins.address);
+                ImGui::Text("%08llX", ins.address);
                 ImGui::PopStyleColor();
 
                 ImGui::TableNextColumn();

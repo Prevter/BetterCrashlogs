@@ -176,7 +176,7 @@ namespace utils::geode {
             mods.push_back({
                 metadata.getName(),
                 metadata.getID(),
-                metadata.getVersion().toString(),
+                metadata.getVersion().toVString(),
                 developer,
                 status,
                 mod

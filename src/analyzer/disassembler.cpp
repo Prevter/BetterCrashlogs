@@ -1,6 +1,6 @@
 #include "disassembler.hpp"
 
-#include <zydis/zydis.h>
+#include <Zydis/Zydis.h>
 #include <fmt/format.h>
 #include <sstream>
 #include <unordered_map>
