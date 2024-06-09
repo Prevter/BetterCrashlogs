@@ -359,8 +359,11 @@ $execute {
     });
 
     // Fetch codegen file once every 4 hours
-    if (geode::Mod::get()->getSavedValue<time_t>("codegen_fetch_time", 0) + 14400 < time(nullptr)) {
-        geode::Mod::get()->setSavedValue("codegen_fetch_time", time(nullptr));
+    auto& config = config::get();
+    auto lastUpdate = config.last_bindings_update;
+    if (lastUpdate + 14400 < time(nullptr)) {
+        config.last_bindings_update = time(nullptr);
+        config::save();
         geode::log::info("Fetching codegen file...");
         auto codegenPath = configDir / fmt::format("codegen-{}.txt", utils::geode::getGameVersion());
         auto req = geode::utils::web::WebRequest();

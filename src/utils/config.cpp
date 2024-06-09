@@ -43,6 +43,7 @@ namespace config {
             else if (key == "window_h") config.window_h = std::stoi(value);
             else if (key == "window_maximized") config.window_maximized = value == "true";
             else if (key == "ui_scale") config.ui_scale = std::stof(value);
+            else if (key == "last_bindings_update") config.last_bindings_update = std::stoll(value);
         }
 
         file.close();
@@ -58,6 +59,7 @@ namespace config {
         file << "window_h=" << config.window_h << "\n";
         file << "window_maximized=" << (config.window_maximized ? "true" : "false") << "\n";
         file << "ui_scale=" << config.ui_scale << "\n";
+        file << "last_bindings_update=" << config.last_bindings_update << "\n";
 
         file.close();
     }

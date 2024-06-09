@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ctime>
+
 namespace config {
 
     struct Config {
@@ -9,6 +11,7 @@ namespace config {
         int window_h;
         bool window_maximized;
         float ui_scale;
+        time_t last_bindings_update;
     };
 
     void load();
