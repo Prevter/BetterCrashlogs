@@ -229,6 +229,7 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                 }
             }
 
+#ifndef _WIN64
             if (!win32::four_gb::isPatched()) {
                 if (ImGui::MenuItem("Apply 4GB Patch")) {
                     win32::four_gb::patch();
@@ -237,6 +238,7 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                     ImGui::SetTooltip("Patch the game to use 4GB of memory.");
                 }
             }
+#endif
 
             // Settings menu
             if (ImGui::BeginMenu("Settings")) {
@@ -288,6 +290,43 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
     return result;
 }
 
+inline bool isWine() {
+    HMODULE hModule = GetModuleHandleA("ntdll.dll");
+    if (!hModule) return false;
+    FARPROC func = GetProcAddress(hModule, "wine_get_version");
+    return func != nullptr;
+}
+
+LONG WINAPI ContinueHandler(LPEXCEPTION_POINTERS info) {
+    if (info->ExceptionRecord->ExceptionCode == EH_EXCEPTION_NUMBER) {
+        HandleCrash(info);
+    }
+
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+LONG WINAPI ExceptionHandler(LPEXCEPTION_POINTERS info) {
+    switch (info->ExceptionRecord->ExceptionCode) {
+        case DBG_EXCEPTION_HANDLED:
+        case DBG_CONTINUE:
+        case DBG_REPLY_LATER:
+        case DBG_TERMINATE_THREAD:
+        case DBG_TERMINATE_PROCESS:
+        case DBG_RIPEXCEPTION:
+        case DBG_CONTROL_BREAK:
+        case DBG_COMMAND_EXCEPTION:
+        case DBG_PRINTEXCEPTION_C:
+        case DBG_PRINTEXCEPTION_WIDE_C:
+        case DBG_CONTROL_C:
+        case STATUS_CONTROL_C_EXIT:
+        case EXCEPTION_SET_THREAD_NAME:
+        case EH_EXCEPTION_NUMBER:
+            return EXCEPTION_CONTINUE_SEARCH;
+        default:
+            return HandleCrash(info);
+    }
+}
+
 $execute {
     // Copy "imgui.ini" from the resources directory to the config directory if it doesn't exist
     auto resourcesDir = utils::geode::getResourcesPath();
@@ -297,21 +336,12 @@ $execute {
         std::filesystem::copy(resourcesDir / "imgui.ini", iniPath);
     }
 
-    geode::log::info("Setting up crash handler...");
 
-    AddVectoredExceptionHandler(0, [](PEXCEPTION_POINTERS ExceptionInfo) -> LONG {
-        auto exceptionCode = ExceptionInfo->ExceptionRecord->ExceptionCode;
-        switch (exceptionCode) {
-            case EXCEPTION_BREAKPOINT:
-            case EXCEPTION_STACK_OVERFLOW:
-                return HandleCrash(ExceptionInfo);
-            case EXCEPTION_SET_THREAD_NAME:
-                return EXCEPTION_CONTINUE_SEARCH;
-            default:
-                SetUnhandledExceptionFilter(HandleCrash);
-                return EXCEPTION_CONTINUE_SEARCH;
         }
     });
-    SetUnhandledExceptionFilter(HandleCrash);
+    geode::log::info("Setting up crash handler...");
+    AddVectoredExceptionHandler(0, ExceptionHandler);
+    AddVectoredContinueHandler(0, ContinueHandler);
+    if (isWine()) SetUnhandledExceptionFilter(ContinueHandler);
 }
 

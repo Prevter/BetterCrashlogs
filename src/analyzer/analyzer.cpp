@@ -402,15 +402,16 @@ namespace analyzer {
 
         auto ctx = exceptionInfo->ContextRecord;
 
-        DWORD machineType = IMAGE_FILE_MACHINE_I386;
 #if _WIN64
-        stackFrame.AddrPC.Offset = ctx->Rip;
-        stackFrame.AddrPC.Mode = AddrModeFlat;
+        DWORD machineType = IMAGE_FILE_MACHINE_AMD64;
         stackFrame.AddrFrame.Offset = ctx->Rbp;
+        stackFrame.AddrPC.Mode = AddrModeFlat;
+        stackFrame.AddrPC.Offset = ctx->Rip;
         stackFrame.AddrFrame.Mode = AddrModeFlat;
         stackFrame.AddrStack.Offset = ctx->Rsp;
         stackFrame.AddrStack.Mode = AddrModeFlat;
 #else
+        DWORD machineType = IMAGE_FILE_MACHINE_I386;
         stackFrame.AddrPC.Offset = ctx->Eip;
         stackFrame.AddrPC.Mode = AddrModeFlat;
         stackFrame.AddrFrame.Offset = ctx->Ebp;

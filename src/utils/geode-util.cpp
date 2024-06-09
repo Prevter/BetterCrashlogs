@@ -9,7 +9,6 @@ namespace utils::geode {
     const char *problemTypeToString(::geode::LoadProblem::Type type) {
 #define CASE(x) case ::geode::LoadProblem::Type::x: return #x
         switch (type) {
-            CASE(Unknown);
             CASE(Suggestion);
             CASE(Recommendation);
             CASE(Conflict);
@@ -28,6 +27,7 @@ namespace utils::geode {
             CASE(DisabledDependency);
             CASE(OutdatedDependency);
             CASE(OutdatedIncompatibility);
+            default: return "Unknown";
         }
 #undef CASE
     }

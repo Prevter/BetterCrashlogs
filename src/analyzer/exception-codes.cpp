@@ -5,6 +5,9 @@
 #include <stdexcept>
 #include <Windows.h>
 
+#define GEODE_TERMINATE_EXCEPTION_CODE 0x4000
+#define GEODE_UNREACHABLE_EXCEPTION_CODE 0x4001
+
 namespace analyzer::exceptions {
 
     const char *getName(DWORD exceptionCode) {
@@ -32,6 +35,8 @@ namespace analyzer::exceptions {
             CASE(EXCEPTION_STACK_OVERFLOW);
             CASE(EXCEPTION_GUARD_PAGE);
             CASE(EXCEPTION_INVALID_HANDLE);
+            CASE(GEODE_TERMINATE_EXCEPTION_CODE);
+            CASE(GEODE_UNREACHABLE_EXCEPTION_CODE);
             CASE(EH_EXCEPTION_NUMBER);
             default:
                 return "Unknown exception";

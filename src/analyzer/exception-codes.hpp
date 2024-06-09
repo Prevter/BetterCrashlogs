@@ -10,6 +10,7 @@
 #include "ehdata-structs.hpp"
 
 #define EXCEPTION_SET_THREAD_NAME 0x406D1388
+#define EH_EXCEPTION_NUMBER 0xE06D7363
 
 namespace analyzer::exceptions {
 
