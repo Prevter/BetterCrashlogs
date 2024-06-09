@@ -19,6 +19,7 @@ A mod that overhauls the crash log system in Geometry Dash.
 - [x] Base game method names (no more GeometryDash.exe+0x123456)
 - [x] Basic disassembly view (using Zydis)
 - [x] Terminate crashed threads without closing the game
+- [x] Auto update bindings for the game (supports any GD version)
 
 ## Planned Features
 - [ ] Fetch .pdb files from mod's GitHub repository (if available)

@@ -1,5 +1,8 @@
 ## v1.4.0
 - 64-bit support!
+- Added 24 new quotes
+- Mod now supports any GD version
+- Bindings are now updated automatically
 
 ## v1.3.0
 - Fix crash when getting two or more crashes (how ironic)
