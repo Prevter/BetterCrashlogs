@@ -534,7 +534,7 @@ namespace analyzer {
         const std::array<std::string, 7> graphicsDrivers = {
             "nvoglv32.dll", // NVIDIA
             "atioglxx.dll", // AMD
-            "ig9icd32.dll"  // Intel
+            "ig9icd32.dll",  // Intel
 
             "nvoglv64.dll", // NVIDIA
             "atig6pxx.dll", // AMD
