@@ -24,7 +24,7 @@ jobs:
           submodules: recursive
 
       - name: Build the mod
-        uses: prevter/build-geode-mod@main
+        uses: geode-sdk/build-geode-mod@main
         with:
           sdk: nightly
           combine: true
