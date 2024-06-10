@@ -531,14 +531,25 @@ namespace analyzer {
     }
 
     bool Analyzer::isGraphicsDriverCrash() {
+        const std::array<std::string, 7> graphicsDrivers = {
+            "nvoglv32.dll", // NVIDIA
+            "atioglxx.dll", // AMD
+            "ig9icd32.dll"  // Intel
+
+            "nvoglv64.dll", // NVIDIA
+            "atig6pxx.dll", // AMD
+            "atio6axx.dll", // AMD
+            "ig9icd64.dll"  // Intel
+        };
+
         // check latest 3 stack frames
         auto trace = getStackTrace();
         for (int i = 0; i < 3 && i < trace.size(); i++) {
             auto &line = trace[i];
-            if (line.module.name.find("nvoglv32.dll") != std::string::npos || // NVIDIA
-                line.module.name.find("atioglxx.dll") != std::string::npos || // AMD
-                line.module.name.find("ig9icd32.dll") != std::string::npos) { // Intel
-                return true;
+            for (const auto &driver : graphicsDrivers) {
+                if (line.module.name.find(driver) != std::string::npos) {
+                    return true;
+                }
             }
         }
         return false;

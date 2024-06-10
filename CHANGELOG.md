@@ -1,3 +1,7 @@
+## v1.4.1
+- Geode v3.0.0-alpha.2 support
+- Fix graphics driver crash detection
+
 ## v1.4.0
 - 64-bit support!
 - Added 24 new quotes
