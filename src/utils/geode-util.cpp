@@ -90,12 +90,16 @@ namespace utils::geode {
                 "- Loader Commit: {}\n"
                 "- Bindings Commit: {}\n"
                 "- Installed Mods: {} (Loaded: {}/{})\n"
+#ifndef _WIN64
                 "- 4GB Patch: {}\n"
+#endif
                 "- Problems: {}{}",
                 wd, getLoaderVersion(), getGameVersion(),
                 about::getLoaderCommitHash(), about::getBindingsCommitHash(),
                 getModCount(), getLoadedModCount(), getEnabledModCount(),
+#ifndef _WIN64
                 win32::four_gb::isPatched() ? "Patched" : "Not patched",
+#endif
                 problems.size(), problems.empty() ? "" : fmt::format("\n{}", readProblems(problems))
         );
 

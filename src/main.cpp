@@ -12,10 +12,20 @@
 #include "analyzer/disassembler.hpp"
 #include "analyzer/4gb_patch.hpp"
 #include "utils/config.hpp"
-#include "utils/sigscan.hpp"
 #include "utils/memory.hpp"
 
+#define LOG_WRAP(message, ...) geode::log::info("Getting " message); __VA_ARGS__
+
 std::string getCrashReport(analyzer::Analyzer& analyzer) {
+    auto currentDateTime = utils::getCurrentDateTime();
+    auto randomQuote = ui::pickRandomQuote();
+    LOG_WRAP("Loader Metadata", auto loaderMetadata = utils::geode::getLoaderMetadataMessage());
+    LOG_WRAP("Exception Info", auto exceptionInfo = analyzer.getExceptionMessage());
+    LOG_WRAP("Stack Trace", auto stackTrace = analyzer.getStackTraceMessage());
+    LOG_WRAP("Register States", auto registerStates = analyzer.getRegisterStateMessage());
+    LOG_WRAP("Installed Mods", auto installedMods = utils::geode::getModListMessage());
+    LOG_WRAP("Stack Allocations", auto stackAllocations = analyzer.getStackAllocationsMessage());
+
     return fmt::format(
             "{}\n{}\n\n"
             "== Geode Information ==\n"
@@ -30,14 +40,10 @@ std::string getCrashReport(analyzer::Analyzer& analyzer) {
             "{}\n\n"
             "== Stack Allocations ==\n"
             "{}",
-            utils::getCurrentDateTime(),
-            ui::pickRandomQuote(),
-            utils::geode::getLoaderMetadataMessage(),
-            analyzer.getExceptionMessage(),
-            analyzer.getStackTraceMessage(),
-            analyzer.getRegisterStateMessage(),
-            utils::geode::getModListMessage(),
-            analyzer.getStackAllocationsMessage()
+            currentDateTime, randomQuote,
+            loaderMetadata, exceptionInfo,
+            stackTrace, registerStates,
+            installedMods, stackAllocations
     );
 }
 
@@ -105,12 +111,13 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
     static auto crashReportPath = crashReportDir / fmt::format("{}.txt", utils::getCurrentDateTime(true));
     if (!saved) {
         // Create the crash report
-        geode::log::error("Saving crash information...");
+        geode::log::info("Saving crash information...");
         std::filesystem::create_directories(crashReportPath.parent_path());
         std::ofstream crashReportFile(crashReportPath);
         crashReportFile << crashReport;
         crashReportFile.close();
         saved = true;
+        geode::log::info("Crash information saved to: {}", crashReportPath.string());
 
         // Create empty "last-crashed" file to indicate that the game crashed
         std::ofstream lastCrashedFile(crashReportDir / "last-crashed");
@@ -368,15 +375,6 @@ $execute {
         auto codegenPath = configDir / fmt::format("codegen-{}.txt", utils::geode::getGameVersion());
         auto req = geode::utils::web::WebRequest();
         s_listener.setFilter(req.get(fmt::format("https://prevter.github.io/bindings-meta/Win32-{}.txt", utils::geode::getGameVersion())));
-    }
-
-    // Patch Geode.dll to disable its own crash handler
-    auto patch1 = sigscan::findPattern("813863736DE0^", "Geode.dll"); // continueHandler
-    auto patch2 = sigscan::findPattern("4839F8^7508", "Geode.dll");   // exceptionHandler
-    if (patch1 && patch2) {
-        geode::log::info("Patching Geode.dll to disable its own crash handler...");
-        utils::mem::writeMemory(patch1, "\xEB", 1);
-        utils::mem::writeMemory(patch2, "\xEB", 1);
     }
 
     geode::log::info("Setting up crash handler...");
