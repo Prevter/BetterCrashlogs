@@ -31,6 +31,8 @@ namespace analyzer {
         Function,
         // A valid string pointer
         String,
+        // A valid CCObject pointer
+        CCObject,
     };
 
     struct MethodInfo {
@@ -129,6 +131,9 @@ namespace analyzer {
 
         /// @brief Get the string from an address.
         static std::string getString(uintptr_t address);
+
+        /// @brief Get the name of a CCObject from an address.
+        static std::string getCCObject(uintptr_t address);
 
         /// @brief Get the string from a pointer.
         std::string getFromPointer(uintptr_t address, size_t depth = 0);

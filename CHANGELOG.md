@@ -1,3 +1,8 @@
+## v1.5.0
+- Fixed few false positive crashes
+- Fixed bindings fetching
+- Added class names for CCObject pointers
+
 ## v1.4.2
 - Geode v3.0.0-beta.1 support
 - Fixed random crashes

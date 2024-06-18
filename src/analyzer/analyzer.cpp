@@ -126,6 +126,43 @@ namespace analyzer {
         return exceptionMessage;
     }
 
+    bool isCCObjectPtr(uintptr_t address) {
+        // Check vtable
+        uintptr_t newPtr = *reinterpret_cast<uintptr_t*>(address);
+        if (!utils::mem::isAccessible(newPtr)) {
+            return false;
+        }
+
+        // Check if it has a valid function pointer
+        uintptr_t funcPtr = *reinterpret_cast<uintptr_t*>(newPtr);
+        if (!utils::mem::isFunctionPtr(funcPtr)) {
+            return false;
+        }
+
+        // Get class type name
+        auto ccobject = reinterpret_cast<cocos2d::CCObject *>(address);
+        const char* type = typeid(*ccobject).name();
+
+        // check if it returned a valid string
+        if (!utils::mem::isStringPtr((uintptr_t) type)) {
+            return false;
+        }
+
+        // check if it starts with "class ", else return false
+        std::string typeStr(type);
+        if (typeStr.find("class ") != 0) {
+            return false;
+        }
+
+        // do last check to see if it's a CCObject
+        auto* ccobject2 = geode::cast::typeinfo_cast<cocos2d::CCObject*>(ccobject);
+        if (ccobject2 == nullptr) {
+            return false;
+        }
+
+        return true;
+    }
+
     ValueType Analyzer::getValueType(uintptr_t address) {
         if (!utils::mem::isAccessible(address))
             return ValueType::Unknown;
@@ -135,6 +172,9 @@ namespace analyzer {
 
         if (utils::mem::isFunctionPtr(address))
             return ValueType::Function;
+
+        if (isCCObjectPtr(address))
+            return ValueType::CCObject;
 
         return ValueType::Pointer;
     }
@@ -208,6 +248,24 @@ namespace analyzer {
         return fmt::format("&\"{}\"", str);
     }
 
+    std::string Analyzer::getCCObject(uintptr_t address) {
+        auto* node = (cocos2d::CCObject*) address;
+#ifdef GEODE_IS_WINDOWS
+        const char* type = typeid(*node).name() + 6;
+#else
+        std::string type;
+        {
+            int status = 0;
+            auto demangle = abi::__cxa_demangle(typeid(*node).name(), 0, 0, &status);
+            if (status == 0) {
+                type = demangle;
+            }
+            free(demangle);
+        }
+#endif
+        return fmt::format("{}*", type);
+    }
+
     std::string Analyzer::getFromPointer(uintptr_t address, size_t depth) {
         uintptr_t value = *(uintptr_t *) address;
 
@@ -218,6 +276,8 @@ namespace analyzer {
         // Check if this was a pointer to a pointer
         auto valueType = getValueType(value);
         switch (valueType) {
+            case ValueType::CCObject:
+                return fmt::format("-> 0x{:X} ({})", value, getCCObject(value));
             case ValueType::Function:
                 return fmt::format("-> 0x{:X} -> {}", value, getFunction(value).toString());
             case ValueType::String:
@@ -237,6 +297,8 @@ namespace analyzer {
                 return {ValueType::String, getString(address)};
             case ValueType::Pointer:
                 return {ValueType::Pointer, getFromPointer(address)};
+            case ValueType::CCObject:
+                return {ValueType::CCObject, getCCObject(address)};
             default:
                 return {ValueType::Unknown, fmt::format("{}i | {}u", address, *(uint32_t *) &address)};
         }

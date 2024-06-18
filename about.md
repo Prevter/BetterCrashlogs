@@ -20,8 +20,8 @@ A mod that overhauls the crash log system in Geometry Dash.
 - [x] Basic disassembly view (using Zydis)
 - [x] Terminate crashed threads without closing the game
 - [x] Auto update bindings for the game (supports any GD version)
+- [x] Get class names for CCObject pointers
 
 ## Planned Features
 - [ ] Fetch .pdb files from mod's GitHub repository (if available)
 - [ ] Add a settings menu to configure the theme/font size
-- [ ] Get class names for CCObject pointers

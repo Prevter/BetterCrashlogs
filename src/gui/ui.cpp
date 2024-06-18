@@ -25,7 +25,8 @@ namespace ui {
             {"pointer",  IM_COL32(248, 132, 120, 255)}, /* red */
             {"white",    IM_COL32(255, 255, 255, 255)}, /* white */
             {"address",  IM_COL32(122, 160, 141, 255)}, /* cyan */
-            {"function", IM_COL32(245, 86, 119, 255)} /* pink */
+            {"function", IM_COL32(245, 86, 119, 255)}, /* pink */
+            {"ccobject", IM_COL32(232, 211, 74, 255)}, /* yellow */
     };
 
     static int quoteIndex = -1; // -1 means uninitialized (we can reset to -1 to pick a new quote)
@@ -183,6 +184,9 @@ namespace ui {
                             break;
                         case analyzer::ValueType::String:
                             ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
+                            break;
+                        case analyzer::ValueType::CCObject:
+                            ImGui::PushStyleColor(ImGuiCol_Text, colorMap["ccobject"]);
                             break;
                         default:
                             ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
@@ -368,6 +372,9 @@ namespace ui {
                         break;
                     case analyzer::ValueType::String:
                         ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
+                        break;
+                    case analyzer::ValueType::CCObject:
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["ccobject"]);
                         break;
                     default:
                         ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
