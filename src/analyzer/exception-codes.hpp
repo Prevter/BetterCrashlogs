@@ -11,6 +11,7 @@
 
 #define EXCEPTION_SET_THREAD_NAME 0x406D1388
 #define EH_EXCEPTION_NUMBER 0xE06D7363
+#define RPC_S_SERVER_UNAVAILABLE 0x6BA
 
 namespace analyzer::exceptions {
 

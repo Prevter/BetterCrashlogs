@@ -334,6 +334,7 @@ LONG WINAPI ExceptionHandler(LPEXCEPTION_POINTERS info) {
         case STATUS_CONTROL_C_EXIT:
         case EXCEPTION_SET_THREAD_NAME:
         case EH_EXCEPTION_NUMBER:
+        case RPC_S_SERVER_UNAVAILABLE:
             return EXCEPTION_CONTINUE_SEARCH;
         default:
             return HandleCrash(info);
