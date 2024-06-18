@@ -1,3 +1,4 @@
+#ifdef _WIN32
 #pragma once
 
 #include <cstdint>
@@ -93,3 +94,4 @@ namespace win32::four_gb {
         return true;
     }
 }
+#endif
