@@ -340,6 +340,19 @@ LONG WINAPI ExceptionHandler(LPEXCEPTION_POINTERS info) {
     }
 }
 
+inline std::string getBindingsUrl() {
+    return fmt::format(
+        "https://prevter.github.io/bindings-meta/{}-{}{}.txt",
+        GEODE_MACOS("MacOS")
+        GEODE_WINDOWS64("Win64")
+        GEODE_WINDOWS32("Win32"),
+        utils::geode::getGameVersion(),
+        GEODE_WINDOWS("")
+        GEODE_ARM_MAC("-Arm")
+        GEODE_INTEL_MAC("-Intel")
+    );
+}
+
 $execute {
     // Copy "imgui.ini" from the resources directory to the config directory if it doesn't exist
     auto resourcesDir = utils::geode::getResourcesPath();
@@ -368,13 +381,13 @@ $execute {
     // Fetch codegen file once every 4 hours
     auto& config = config::get();
     auto lastUpdate = config.last_bindings_update;
-    if (lastUpdate + 14400 < time(nullptr)) {
+    auto codegenPath = configDir / fmt::format("codegen-{}.txt", utils::geode::getGameVersion());
+    if (lastUpdate + 14400 < time(nullptr) || !std::filesystem::exists(codegenPath)) {
         config.last_bindings_update = time(nullptr);
         config::save();
         geode::log::info("Fetching codegen file...");
-        auto codegenPath = configDir / fmt::format("codegen-{}.txt", utils::geode::getGameVersion());
         auto req = geode::utils::web::WebRequest();
-        s_listener.setFilter(req.get(fmt::format("https://prevter.github.io/bindings-meta/Win32-{}.txt", utils::geode::getGameVersion())));
+        s_listener.setFilter(req.get(getBindingsUrl()));
     }
 
     geode::log::info("Setting up crash handler...");
