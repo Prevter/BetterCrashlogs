@@ -493,6 +493,21 @@ namespace analyzer {
         return nullptr;
     }
 
+    /// @brief Import a TulipHook function
+    PVOID GeodeFunctionTableAccess64(HANDLE hProcess, DWORD64 AddrBase);
+
+    PVOID CustomSymFunctionTableAccess64(HANDLE hProcess, DWORD64 AddrBase) {
+        auto ret = GeodeFunctionTableAccess64(hProcess, AddrBase);
+        if (ret) return ret;
+        return SymFunctionTableAccess64(hProcess, AddrBase);
+    }
+
+    DWORD64 CustomSymGetModuleBase64(HANDLE hProcess, DWORD64 dwAddr) {
+        auto ret = GeodeFunctionTableAccess64(hProcess, dwAddr);
+        if (ret) return dwAddr & (~0xffffull);
+        return SymGetModuleBase64(hProcess, dwAddr);
+    }
+
     const std::vector<StackTraceLine> &Analyzer::getStackTrace() {
         if (!stackTrace.empty())
             return stackTrace;
@@ -523,8 +538,8 @@ namespace analyzer {
         HANDLE process = GetCurrentProcess();
         HANDLE thread = GetCurrentThread();
 
-        while (StackWalk64(machineType, process, thread, &stackFrame, ctx, nullptr, SymFunctionTableAccess64,
-                           SymGetModuleBase64, nullptr)) {
+        while (StackWalk64(machineType, process, thread, &stackFrame, ctx, nullptr, 
+                           CustomSymFunctionTableAccess64, CustomSymGetModuleBase64, nullptr)) {
             if (stackFrame.AddrPC.Offset == 0) {
                 break;
             }

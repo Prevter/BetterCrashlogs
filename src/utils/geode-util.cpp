@@ -85,7 +85,7 @@ namespace utils::geode {
         auto problems = ::geode::Loader::get()->getProblems();
 
         message = fmt::format(
-                "- Working Directory: {}\n"
+                "- Working Directory: {}\n{}"
                 "- Loader Version: {} (Geometry Dash v{})\n"
                 "- Loader Commit: {}\n"
                 "- Bindings Commit: {}\n"
@@ -94,7 +94,8 @@ namespace utils::geode {
                 "- 4GB Patch: {}\n"
 #endif
                 "- Problems: {}{}",
-                wd, getLoaderVersion(), getGameVersion(),
+                wd, isWine() ? "- Wine detected\n" : "",
+                getLoaderVersion(), getGameVersion(),
                 about::getLoaderCommitHash(), about::getBindingsCommitHash(),
                 getModCount(), getLoadedModCount(), getEnabledModCount(),
 #ifndef _WIN64
@@ -279,6 +280,24 @@ namespace utils::geode {
         }
 
         return it == functions.end() ? std::make_pair(methodStart, "") : *it;
+    }
+
+    bool isWine() {
+        static bool checked = false;
+        static bool result = false;
+
+        if (checked) return result;
+
+        HMODULE hModule = GetModuleHandleA("ntdll.dll");
+        if (!hModule) {
+            checked = true;
+            return false;
+        }
+
+        FARPROC func = GetProcAddress(hModule, "wine_get_version");
+        checked = true;
+        result = func != nullptr;
+        return result;
     }
 
 }
