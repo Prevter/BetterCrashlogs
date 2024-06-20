@@ -7,6 +7,9 @@
 
 #pragma comment(lib, "dbghelp")
 
+// Import a TulipHook function
+PVOID GeodeFunctionTableAccess64(HANDLE hProcess, DWORD64 AddrBase);
+
 namespace analyzer {
 
     static HANDLE s_mainThread = GetCurrentThread();
@@ -455,8 +458,13 @@ namespace analyzer {
 #else
         uintptr_t stackPointer = context.Rsp;
 #endif
-        for (int i = 0; i < 32; i++) {
+        constexpr size_t stackSize = 32;
+        for (int i = 0; i < stackSize; i++) {
             uintptr_t address = stackPointer + i * sizeof(uintptr_t);
+            if (!utils::mem::isAccessible(address)) {
+                geode::log::warn("Stack address 0x{:X} is not accessible", address);
+                break;
+            }
             uintptr_t value = *(uintptr_t *) address;
             auto valueResult = getValue(value);
             stackData.push_back({address, value, valueResult.first, valueResult.second});
@@ -492,9 +500,6 @@ namespace analyzer {
         }
         return nullptr;
     }
-
-    /// @brief Import a TulipHook function
-    PVOID GeodeFunctionTableAccess64(HANDLE hProcess, DWORD64 AddrBase);
 
     PVOID CustomSymFunctionTableAccess64(HANDLE hProcess, DWORD64 AddrBase) {
         auto ret = GeodeFunctionTableAccess64(hProcess, AddrBase);

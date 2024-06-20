@@ -2,6 +2,7 @@
 - Fixed few false positive crashes
 - Fixed bindings fetching
 - Added class names for CCObject pointers
+- Fixed some failures in Stack Allocation view
 
 ## v1.4.2
 - Geode v3.0.0-beta.1 support
