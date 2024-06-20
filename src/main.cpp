@@ -13,6 +13,7 @@
 #include "analyzer/4gb_patch.hpp"
 #include "utils/config.hpp"
 #include "utils/memory.hpp"
+#include "utils/hwinfo.hpp"
 
 #define LOG_WRAP(message, ...) geode::log::info("Getting " message); __VA_ARGS__
 
@@ -25,6 +26,7 @@ std::string getCrashReport(analyzer::Analyzer& analyzer) {
     LOG_WRAP("Register States", auto registerStates = analyzer.getRegisterStateMessage());
     LOG_WRAP("Installed Mods", auto installedMods = utils::geode::getModListMessage());
     LOG_WRAP("Stack Allocations", auto stackAllocations = analyzer.getStackAllocationsMessage());
+    LOG_WRAP("Hardware Information", auto hardwareInfo = hwinfo::getMessage());
 
     return fmt::format(
             "{}\n{}\n\n"
@@ -39,11 +41,14 @@ std::string getCrashReport(analyzer::Analyzer& analyzer) {
             "== Installed Mods ==\n"
             "{}\n\n"
             "== Stack Allocations ==\n"
+            "{}\n\n"
+            "== Hardware Information ==\n"
             "{}",
             currentDateTime, randomQuote,
             loaderMetadata, exceptionInfo,
             stackTrace, registerStates,
-            installedMods, stackAllocations
+            installedMods, stackAllocations,
+            hardwareInfo
     );
 }
 

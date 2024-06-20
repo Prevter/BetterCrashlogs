@@ -4,6 +4,7 @@
 #include "../utils/geode-util.hpp"
 #include "../analyzer/disassembler.hpp"
 #include "../utils/config.hpp"
+#include "../utils/hwinfo.hpp"
 
 #include <imgui.h>
 
@@ -137,6 +138,7 @@ namespace ui {
     void metadataWindow() {
         if (ImGui::Begin("Geode Information")) {
             ImGui::TextWrapped("%s", utils::geode::getLoaderMetadataMessage().c_str());
+            ImGui::TextWrapped("%s", hwinfo::getMessage().c_str());
         }
         ImGui::End();
     }
