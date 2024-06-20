@@ -303,13 +303,6 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
     return result;
 }
 
-inline bool isWine() {
-    HMODULE hModule = GetModuleHandleA("ntdll.dll");
-    if (!hModule) return false;
-    FARPROC func = GetProcAddress(hModule, "wine_get_version");
-    return func != nullptr;
-}
-
 LONG WINAPI ContinueHandler(LPEXCEPTION_POINTERS info) {
     if (info->ExceptionRecord->ExceptionCode == EH_EXCEPTION_NUMBER) {
         HandleCrash(info);
@@ -392,8 +385,9 @@ $execute {
     }
 
     geode::log::info("Setting up crash handler...");
-    AddVectoredExceptionHandler(0, ExceptionHandler);
-    AddVectoredContinueHandler(0, ContinueHandler);
-    if (isWine()) SetUnhandledExceptionFilter(ContinueHandler);
+    // AddVectoredExceptionHandler(0, ExceptionHandler);
+    // AddVectoredContinueHandler(0, ContinueHandler);
+    // if (isWine()) SetUnhandledExceptionFilter(ContinueHandler);
+    SetUnhandledExceptionFilter(ExceptionHandler);
 }
 

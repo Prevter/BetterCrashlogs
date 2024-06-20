@@ -76,4 +76,7 @@ namespace utils::geode {
     /// @param address The address to search for
     /// @param moduleBase The base address of the module
     std::pair<uintptr_t, std::string> getFunctionAddress(uintptr_t address, uintptr_t moduleBase);
+
+    /// @brief Check whether current system is running Wine.
+    bool isWine();
 }
