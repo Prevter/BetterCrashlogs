@@ -2,6 +2,7 @@
 
 #include <fmt/format.h>
 #include <sstream>
+#include "geode-util.hpp"
 
 #include <Windows.h>
 #include <intrin.h>
@@ -39,14 +40,16 @@ namespace hwinfo {
             MEMORYSTATUSEX status;
             status.dwLength = sizeof(status);
             GlobalMemoryStatusEx(&status);
-            return status.ullTotalPageFile / 1024 / 1024;
+            auto total = status.ullTotalPageFile / 1024 / 1024;
+            return total - ram::total();
         }
 
         uint64_t used() {
             MEMORYSTATUSEX status;
             status.dwLength = sizeof(status);
             GlobalMemoryStatusEx(&status);
-            return (status.ullTotalPageFile - status.ullAvailPageFile) / 1024 / 1024;
+            auto used = (status.ullTotalPageFile - status.ullAvailPageFile) / 1024 / 1024;
+            return used - ram::used();
         }
 
         uint64_t free() {
@@ -67,14 +70,12 @@ namespace hwinfo {
 
         std::string cpu;
 
-        for (auto& id : functionIds)
-        {
+        for (auto& id : functionIds) {
             __cpuid(integerBuffer.data(), id);
             std::memcpy(charBuffer.data(), integerBuffer.data(), sizeofIntegerBuffer);
             cpu += std::string(charBuffer.data());
         }
 
-        // Trim whitespace at the end
         cpu.erase(std::find_if(cpu.rbegin(), cpu.rend(), [](int ch) {
             return !std::isspace(ch);
         }).base(), cpu.end());
@@ -130,21 +131,13 @@ namespace hwinfo {
         wcscat_s(path, L"\\kernel32.dll");
 
         DWORD handle;
-#if (_WIN32_WINNT >= _WIN32_WINNT_VISTA)
         DWORD len = GetFileVersionInfoSizeExW(FILE_VER_GET_NEUTRAL, path, &handle);
-#else
-        DWORD len = GetFileVersionInfoSizeW(path, &handle);
-#endif
         if (!len) return false;
 
         std::unique_ptr<uint8_t> buff(new (std::nothrow) uint8_t[len]);
         if (!buff) return false;
 
-#if (_WIN32_WINNT >= _WIN32_WINNT_VISTA)
         if (!GetFileVersionInfoExW(FILE_VER_GET_NEUTRAL, path, 0, len, buff.get()))
-#else
-        if (!GetFileVersionInfoW(path, 0, len, buff.get()))
-#endif
             return false;
 
         VS_FIXEDFILEINFO* vInfo = nullptr;
