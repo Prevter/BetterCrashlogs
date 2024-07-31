@@ -49,3 +49,28 @@ struct _MSVC_ThrowInfo {
 #if defined(__clang__)
 # define _ThrowInfo _MSVC_ThrowInfo
 #endif
+
+typedef union _UNWIND_CODE {
+    struct {
+        uint8_t CodeOffset;
+        uint8_t UnwindOp : 4;
+        uint8_t OpInfo   : 4;
+    };
+    uint16_t FrameOffset;
+} UNWIND_CODE, *PUNWIND_CODE;
+
+typedef struct _UNWIND_INFO {
+    uint8_t Version       : 3;
+    uint8_t Flags         : 5;
+    uint8_t SizeOfProlog;
+    uint8_t CountOfCodes;
+    uint8_t FrameRegister : 4;
+    uint8_t FrameOffset   : 4;
+    UNWIND_CODE UnwindCode[1];
+/*  UNWIND_CODE MoreUnwindCode[((CountOfCodes + 1) & ~1) - 1];
+*   union {
+*       OPTIONAL ULONG ExceptionHandler;
+*       OPTIONAL ULONG FunctionEntry;
+*   };
+*   OPTIONAL ULONG ExceptionData[]; */
+} UNWIND_INFO, *PUNWIND_INFO;

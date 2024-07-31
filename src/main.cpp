@@ -332,6 +332,14 @@ LONG WINAPI ExceptionHandler(LPEXCEPTION_POINTERS info) {
         case STATUS_CONTROL_C_EXIT:
         case EXCEPTION_SET_THREAD_NAME:
         case RPC_S_SERVER_UNAVAILABLE:
+        case RPC_S_CALL_FAILED:
+        case RPC_S_CALL_FAILED_DNE:
+        case RPC_S_PROTOCOL_ERROR:
+        case (DWORD)RPC_E_WRONG_THREAD:
+        case RPC_S_SERVER_TOO_BUSY:
+        case RPC_S_INVALID_STRING_BINDING:
+        case RPC_S_WRONG_KIND_OF_BINDING:
+        case RPC_S_INVALID_BINDING:
             return EXCEPTION_CONTINUE_SEARCH;
         default:
             return HandleCrash(info);
@@ -389,9 +397,14 @@ $execute {
     }
 
     geode::log::info("Setting up crash handler...");
-    // AddVectoredExceptionHandler(0, ExceptionHandler);
-    // AddVectoredContinueHandler(0, ContinueHandler);
-    // if (isWine()) SetUnhandledExceptionFilter(ContinueHandler);
     SetUnhandledExceptionFilter(ExceptionHandler);
+
+    if (utils::geode::intrusiveEnabled()) {
+        geode::queueInMainThread([] {
+            geode::log::info("Intrusive mode enabled, setting up continue handler...");
+            AddVectoredContinueHandler(0, ContinueHandler);
+            AddVectoredExceptionHandler(0, ExceptionHandler);
+        });
+    }
 }
 

@@ -79,4 +79,7 @@ namespace utils::geode {
 
     /// @brief Check whether current system is running Wine.
     bool isWine();
+
+    /// @brief Check whether intrusive mode is enabled.
+    bool intrusiveEnabled();
 }

@@ -216,12 +216,39 @@ namespace analyzer::exceptions {
         return stream.str();
     }
 
+    /// @brief Handler for EXCEPTION_WINE_STUB
+    std::string wineStubHandler(LPEXCEPTION_POINTERS exceptionInfo) {
+        auto* dll = reinterpret_cast<const char*>(exceptionInfo->ExceptionRecord->ExceptionInformation[0]);
+        auto* function = reinterpret_cast<const char*>(exceptionInfo->ExceptionRecord->ExceptionInformation[1]);
+        return fmt::format(
+            "Attempted to invoke a non-existent function:\n"
+            "Mangled name: {}\n",
+            "Looking in: {}",
+            function, dll
+        );
+    }
+
+    /// @brief Handler for Geode exceptions
+    std::string geodeExceptionHandler(LPEXCEPTION_POINTERS exceptionInfo) {
+        auto* reason = reinterpret_cast<const char *>(exceptionInfo->ExceptionRecord->ExceptionInformation[0]);
+        auto* mod = reinterpret_cast<geode::Mod*>(exceptionInfo->ExceptionRecord->ExceptionInformation[1]);
+        return fmt::format(
+            "A mod has deliberately asked the game to crash.\n"
+            "Reason: {}\n"
+            "Mod: {} ({})",
+            reason, mod->getID(), mod->getName()
+        );
+    }
+
     std::string getExtraInfo(DWORD exceptionCode, LPEXCEPTION_POINTERS exceptionInfo) {
 #define CASE(code, name) case code: return name##Handler(exceptionInfo)
         switch (exceptionCode) {
             CASE(EXCEPTION_ACCESS_VIOLATION, accessViolation);
             CASE(EXCEPTION_ILLEGAL_INSTRUCTION, illegalInstruction);
             CASE(EH_EXCEPTION_NUMBER, cppException);
+            CASE(EXCEPTION_WINE_STUB, wineStub);
+            CASE(GEODE_TERMINATE_EXCEPTION_CODE, geodeException);
+            CASE(GEODE_UNREACHABLE_EXCEPTION_CODE, geodeException);
             default:
                 return "";
         }

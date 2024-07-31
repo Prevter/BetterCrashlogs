@@ -37,7 +37,7 @@ namespace analyzer {
         // Load debug symbols
         if (!debugSymbolsLoaded) {
             SymSetOptions(SYMOPT_DEFERRED_LOADS | SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
-            debugSymbolsLoaded = SymInitialize(GetCurrentProcess(), nullptr, TRUE);
+            debugSymbolsLoaded = SymInitialize(GetCurrentProcess(), nullptr, true);
         }
 
         // Get thread ID and name
@@ -129,22 +129,14 @@ namespace analyzer {
         return exceptionMessage;
     }
 
-    bool isCCObjectPtr(uintptr_t address) {
-        // Check vtable
-        uintptr_t newPtr = *reinterpret_cast<uintptr_t*>(address);
-        if (!utils::mem::isAccessible(newPtr)) {
+    bool hasTypeInfo(uintptr_t address) {
+        auto obj = reinterpret_cast<uintptr_t *>(address);
+        const char* type;
+        __try {
+            type = typeid(*obj).name();
+        } __except(EXCEPTION_EXECUTE_HANDLER) {
             return false;
         }
-
-        // Check if it has a valid function pointer
-        uintptr_t funcPtr = *reinterpret_cast<uintptr_t*>(newPtr);
-        if (!utils::mem::isFunctionPtr(funcPtr)) {
-            return false;
-        }
-
-        // Get class type name
-        auto ccobject = reinterpret_cast<cocos2d::CCObject *>(address);
-        const char* type = typeid(*ccobject).name();
 
         // check if it returned a valid string
         if (!utils::mem::isStringPtr((uintptr_t) type)) {
@@ -154,12 +146,6 @@ namespace analyzer {
         // check if it starts with "class ", else return false
         std::string typeStr(type);
         if (typeStr.find("class ") != 0) {
-            return false;
-        }
-
-        // do last check to see if it's a CCObject
-        auto* ccobject2 = geode::cast::typeinfo_cast<cocos2d::CCObject*>(ccobject);
-        if (ccobject2 == nullptr) {
             return false;
         }
 
@@ -176,13 +162,17 @@ namespace analyzer {
         if (utils::mem::isFunctionPtr(address))
             return ValueType::Function;
 
-        if (isCCObjectPtr(address))
+        if (hasTypeInfo(address))
             return ValueType::CCObject;
 
         return ValueType::Pointer;
     }
 
     std::string MethodInfo::toString() const {
+        if (isHookHandler()) {
+            return fmt::format("0x{:X} (Hook Handler)", address);
+        }
+
         if (address == 0) {
             return fmt::format("0x{:08X}", offset); // Unknown function
         }
@@ -200,7 +190,17 @@ namespace analyzer {
 
     MethodInfo Analyzer::getFunction(uintptr_t address) {
         HMODULE module = utils::mem::getModuleHandle(address);
+        auto proc = GetCurrentProcess();
+
         if (module == nullptr) {
+            // Check if it's a TulipHook hook handler
+            if (GeodeFunctionTableAccess64(proc, reinterpret_cast<DWORD64>(address))) {
+                MethodInfo info;
+                info.special = MethodInfo::Special::HookHandler;
+                info.address = address;
+                return info;
+            }
+
             return {0, address};
         }
 
@@ -214,10 +214,28 @@ namespace analyzer {
             pSymbol->SizeOfStruct = sizeof(SYMBOL_INFO);
             pSymbol->MaxNameLen = MAX_SYM_NAME;
             DWORD64 displacement;
-            if (SymFromAddr(GetCurrentProcess(), (DWORD64) address, &displacement, pSymbol)) {
+            if (SymFromAddr(proc, (DWORD64) address, &displacement, pSymbol)) {
+                if (auto entry = SymFunctionTableAccess64(proc, static_cast<DWORD64>(address))) {
+                    auto moduleBase = SymGetModuleBase64(proc, static_cast<DWORD64>(address));
+                    auto runtimeFunction = static_cast<PRUNTIME_FUNCTION>(entry);
+                    auto unwindInfo = reinterpret_cast<PUNWIND_INFO>(moduleBase + runtimeFunction->UnwindInfoAddress);
+
+                    // This is a chain of unwind info structures, so we traverse back to the first one
+                    while (unwindInfo->Flags & UNW_FLAG_CHAININFO) {
+                        runtimeFunction = (PRUNTIME_FUNCTION)&(unwindInfo->UnwindCode[( unwindInfo->CountOfCodes + 1 ) & ~1]);
+                        unwindInfo = reinterpret_cast<PUNWIND_INFO>(moduleBase + runtimeFunction->UnwindInfoAddress);
+                    }
+
+                    if (moduleBase + runtimeFunction->BeginAddress != pSymbol->Address) {
+                        // the symbol address is not the same as the function address
+                        goto continueCheck; // :sob:
+                    }
+                }
+
                 return {moduleName, moduleOffset, pSymbol->Name, static_cast<uintptr_t>(displacement)};
             }
         }
+    continueCheck:
 
         // Check if it's the main module
         if (module == GetModuleHandle(nullptr)) {
@@ -251,8 +269,8 @@ namespace analyzer {
         return fmt::format("&\"{}\"", str);
     }
 
-    std::string Analyzer::getCCObject(uintptr_t address) {
-        auto* node = (cocos2d::CCObject*) address;
+    std::string Analyzer::getTypeName(uintptr_t address) {
+        auto* node = (uintptr_t*) address;
 #ifdef GEODE_IS_WINDOWS
         const char* type = typeid(*node).name() + 6;
 #else
@@ -280,7 +298,7 @@ namespace analyzer {
         auto valueType = getValueType(value);
         switch (valueType) {
             case ValueType::CCObject:
-                return fmt::format("-> 0x{:X} ({})", value, getCCObject(value));
+                return fmt::format("-> 0x{:X} ({})", value, getTypeName(value));
             case ValueType::Function:
                 return fmt::format("-> 0x{:X} -> {}", value, getFunction(value).toString());
             case ValueType::String:
@@ -301,7 +319,7 @@ namespace analyzer {
             case ValueType::Pointer:
                 return {ValueType::Pointer, getFromPointer(address)};
             case ValueType::CCObject:
-                return {ValueType::CCObject, getCCObject(address)};
+                return {ValueType::CCObject, getTypeName(address)};
             default:
                 return {ValueType::Unknown, fmt::format("{}i | {}u", address, *(uint32_t *) &address)};
         }
@@ -519,25 +537,22 @@ namespace analyzer {
 
         STACKFRAME64 stackFrame;
         memset(&stackFrame, 0, sizeof(STACKFRAME64));
+        stackFrame.AddrPC.Mode = AddrModeFlat;
+        stackFrame.AddrFrame.Mode = AddrModeFlat;
+        stackFrame.AddrStack.Mode = AddrModeFlat;
 
         auto ctx = exceptionInfo->ContextRecord;
 
 #if _WIN64
         DWORD machineType = IMAGE_FILE_MACHINE_AMD64;
         stackFrame.AddrFrame.Offset = ctx->Rbp;
-        stackFrame.AddrPC.Mode = AddrModeFlat;
         stackFrame.AddrPC.Offset = ctx->Rip;
-        stackFrame.AddrFrame.Mode = AddrModeFlat;
         stackFrame.AddrStack.Offset = ctx->Rsp;
-        stackFrame.AddrStack.Mode = AddrModeFlat;
 #else
         DWORD machineType = IMAGE_FILE_MACHINE_I386;
         stackFrame.AddrPC.Offset = ctx->Eip;
-        stackFrame.AddrPC.Mode = AddrModeFlat;
         stackFrame.AddrFrame.Offset = ctx->Ebp;
-        stackFrame.AddrFrame.Mode = AddrModeFlat;
         stackFrame.AddrStack.Offset = ctx->Esp;
-        stackFrame.AddrStack.Mode = AddrModeFlat;
 #endif
 
         HANDLE process = GetCurrentProcess();
@@ -637,7 +652,7 @@ namespace analyzer {
         return false;
     }
 
-    bool Analyzer::isMainThread() {
+    bool Analyzer::isMainThread() const {
         return mainThreadCrash;
     }
 

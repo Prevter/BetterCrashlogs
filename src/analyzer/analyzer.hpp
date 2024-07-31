@@ -36,6 +36,11 @@ namespace analyzer {
     };
 
     struct MethodInfo {
+        enum class Special {
+            None = 0,
+            HookHandler = 1,
+        };
+
         std::string module; // Module name
         uintptr_t address; // Address, relative to the module
         std::string name; // Function name
@@ -43,6 +48,7 @@ namespace analyzer {
 
         std::string file; // File name (if available)
         uint32_t line; // Line number (if available)
+        Special special = Special::None;
 
         /// @brief Default constructor.
         MethodInfo() : address(0), offset(0), line(0) {}
@@ -58,6 +64,10 @@ namespace analyzer {
         /// @brief Constructor with module and function name.
         MethodInfo(std::string mod, uintptr_t addr, std::string nm, uintptr_t offset)
                 : module(std::move(mod)), address(addr), name(std::move(nm)), offset(offset), line(0) {}
+
+        [[nodiscard]] bool isHookHandler() const {
+            return (static_cast<int>(special) & static_cast<int>(Special::HookHandler)) != 0;
+        }
 
         /// @brief Convert the method info to a string.
         [[nodiscard]] std::string toString() const;
@@ -133,7 +143,7 @@ namespace analyzer {
         static std::string getString(uintptr_t address);
 
         /// @brief Get the name of a CCObject from an address.
-        static std::string getCCObject(uintptr_t address);
+        static std::string getTypeName(uintptr_t address);
 
         /// @brief Get the string from a pointer.
         std::string getFromPointer(uintptr_t address, size_t depth = 0);
@@ -194,6 +204,6 @@ namespace analyzer {
         ModuleInfo *getModuleInfo(void *address);
 
         /// @brief Check whether the crash happened in the main thread
-        bool isMainThread();
+        bool isMainThread() const;
     };
 }

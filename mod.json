@@ -1,5 +1,5 @@
 {
-	"geode": "3.0.0",
+	"geode": "3.2.0",
 	"gd": { "win": "*" },
 	"version": "v1.5.0",
 	"id": "prevter.bettercrash",
@@ -11,5 +11,13 @@
 	},
 	"tags": ["Utility", "Developer"],
 	"repository": "https://github.com/Prevter/BetterCrashlogs",
-	"early-load": true
+	"early-load": true,
+	"settings": {
+		"intrusive-mode": {
+			"name": "Intrusive Mode",
+			"description": "Makes the crash handler catch more crashes, but comes with a cost of having false positives. (Requires restart)",
+			"type": "bool",
+			"default": false
+		}
+	}
 }

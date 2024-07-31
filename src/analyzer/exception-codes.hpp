@@ -11,6 +11,7 @@
 
 #define EXCEPTION_SET_THREAD_NAME 0x406D1388
 #define EH_EXCEPTION_NUMBER 0xE06D7363
+#define EXCEPTION_WINE_STUB 0x80000100
 
 namespace analyzer::exceptions {
 
@@ -31,6 +32,12 @@ namespace analyzer::exceptions {
 
     /// @brief Handler for EXCEPTION_ILLEGAL_INSTRUCTION
     std::string illegalInstructionHandler(LPEXCEPTION_POINTERS exceptionInfo);
+
+    /// @brief Handler for EXCEPTION_WINE_STUB
+    std::string wineStubHandler(LPEXCEPTION_POINTERS exceptionInfo);
+
+    /// @brief Handler for Geode exceptions
+    std::string geodeExceptionHandler(LPEXCEPTION_POINTERS exceptionInfo);
 
     /// @brief Get extra information about an exception. (if available)
     std::string getExtraInfo(DWORD exceptionCode, LPEXCEPTION_POINTERS exceptionInfo);

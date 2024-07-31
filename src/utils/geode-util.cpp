@@ -300,4 +300,8 @@ namespace utils::geode {
         return result;
     }
 
+    bool intrusiveEnabled() {
+        return ::geode::Mod::get()->getSettingValue<bool>("intrusive-mode");
+    }
+
 }

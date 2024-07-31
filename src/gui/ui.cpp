@@ -28,6 +28,7 @@ namespace ui {
             {"address",  IM_COL32(122, 160, 141, 255)}, /* cyan */
             {"function", IM_COL32(245, 86, 119, 255)}, /* pink */
             {"ccobject", IM_COL32(232, 211, 74, 255)}, /* yellow */
+            {"hookhandler", IM_COL32(200, 200, 200, 255)}, /* greyish */
     };
 
     static int quoteIndex = -1; // -1 means uninitialized (we can reset to -1 to pick a new quote)
@@ -399,7 +400,7 @@ namespace ui {
             auto stackTrace = analyzer.getStackTrace();
 
 #define COPY_POPUP(value, id)                        \
-        if (ImGui::BeginPopupContextItem(id)) {      \
+        if (ImGui::BeginPopupContextItem(id + i)) {      \
             ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);\
             if (ImGui::MenuItem("Copy")) {           \
                 ImGui::SetClipboardText(value);      \
@@ -409,7 +410,9 @@ namespace ui {
         }
 
             // Create a table with the stack trace
+            auto i = 0;
             for (const auto &line: stackTrace) {
+                i++;
                 ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
                 auto functionStr = line.function.toString();
                 if (line.function.module.empty()) {
