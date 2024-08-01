@@ -228,7 +228,11 @@ namespace ui {
                         ImGui::TableNextColumn();
 
                         ImGui::PushStyleColor(ImGuiCol_Text, colorMap["string"]);
-                        ImGui::Text("%f | %f | %f | %f", reg.floats[3], reg.floats[2], reg.floats[1], reg.floats[0]);
+                        if (reg.hasString) {
+                            ImGui::Text("%s", reg.stringValue.c_str());
+                        } else {
+                            ImGui::Text("%f | %f | %f | %f", reg.floats[3], reg.floats[2], reg.floats[1], reg.floats[0]);
+                        }
                         ImGui::PopStyleColor();
                     }
 
@@ -404,6 +408,7 @@ namespace ui {
             ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);\
             if (ImGui::MenuItem("Copy")) {           \
                 ImGui::SetClipboardText(value);      \
+                showToast(fmt::format("Copied {}", value)); \
             }                                        \
             ImGui::PopStyleColor();                  \
             ImGui::EndPopup();                       \
@@ -416,7 +421,11 @@ namespace ui {
                 ImGui::PushStyleColor(ImGuiCol_Text, colorMap["primary"]);
                 auto functionStr = line.function.toString();
                 if (line.function.module.empty()) {
-                    ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                    if (line.function.isHookHandler()) {
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["hookhandler"]);
+                    } else {
+                        ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                    }
                     ImGui::Text("- %s", functionStr.c_str());
                     COPY_POPUP(functionStr.c_str(), fmt::format("address_{:X}", line.address).c_str());
                     ImGui::PopStyleColor();

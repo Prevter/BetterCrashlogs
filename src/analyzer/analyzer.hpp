@@ -100,6 +100,8 @@ namespace analyzer {
         std::string name;
         std::string value;
         std::array<float, 4> floats;
+        bool hasString = false;
+        std::string stringValue;
 
         XmmRegister(std::string name, std::array<float, 4> floats, std::string value)
                 : name(std::move(name)), floats(floats), value(std::move(value)) {}

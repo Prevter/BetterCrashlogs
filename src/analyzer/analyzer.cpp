@@ -131,10 +131,12 @@ namespace analyzer {
 
     bool hasTypeInfo(uintptr_t address) {
         auto obj = reinterpret_cast<uintptr_t *>(address);
-        const char* type;
-        __try {
-            type = typeid(*obj).name();
-        } __except(EXCEPTION_EXECUTE_HANDLER) {
+        const char *type;
+        __try{
+                type = typeid(*obj).name();
+        }
+        __except(EXCEPTION_EXECUTE_HANDLER)
+        {
             return false;
         }
 
@@ -222,7 +224,8 @@ namespace analyzer {
 
                     // This is a chain of unwind info structures, so we traverse back to the first one
                     while (unwindInfo->Flags & UNW_FLAG_CHAININFO) {
-                        runtimeFunction = (PRUNTIME_FUNCTION)&(unwindInfo->UnwindCode[( unwindInfo->CountOfCodes + 1 ) & ~1]);
+                        runtimeFunction = (PRUNTIME_FUNCTION) &(unwindInfo->UnwindCode[(unwindInfo->CountOfCodes + 1) &
+                                                                                       ~1]);
                         unwindInfo = reinterpret_cast<PUNWIND_INFO>(moduleBase + runtimeFunction->UnwindInfoAddress);
                     }
 
@@ -235,7 +238,7 @@ namespace analyzer {
                 return {moduleName, moduleOffset, pSymbol->Name, static_cast<uintptr_t>(displacement)};
             }
         }
-    continueCheck:
+        continueCheck:
 
         // Check if it's the main module
         if (module == GetModuleHandle(nullptr)) {
@@ -270,9 +273,9 @@ namespace analyzer {
     }
 
     std::string Analyzer::getTypeName(uintptr_t address) {
-        auto* node = (uintptr_t*) address;
+        auto *node = (uintptr_t *) address;
 #ifdef GEODE_IS_WINDOWS
-        const char* type = typeid(*node).name() + 6;
+        const char *type = typeid(*node).name() + 6;
 #else
         std::string type;
         {
@@ -418,13 +421,30 @@ namespace analyzer {
         return registerStateMessage;
     }
 
+    inline size_t strlen_s(const char* str, size_t max = 16) {
+        size_t i = 0;
+        while (str[i] != '\0' && i < max) {
+            i++;
+        }
+        return i;
+    }
+
     inline XmmRegister constructXmmRegister(int index, M128A xmm) {
         std::array<float, 4> floats = reinterpret_cast<std::array<float, 4> &>(xmm);
-        return {
+        XmmRegister xmmRegister {
             fmt::format("XMM{}", index),
             floats,
             fmt::format("{:016X} {:016X}", xmm.High, xmm.Low),
         };
+
+        // Check if the XMM register contains a string (length is more than 4)
+        const char* str = reinterpret_cast<const char*>(&xmm);
+        if (strlen_s(str) > 4) {
+            xmmRegister.hasString = true;
+            xmmRegister.stringValue = fmt::format("\"{}\"", std::string(str, strlen_s(str)));
+        }
+
+        return xmmRegister;
     }
 
     const std::vector<XmmRegister> &Analyzer::getXmmRegisters() {
@@ -559,7 +579,7 @@ namespace analyzer {
         HANDLE process = GetCurrentProcess();
         HANDLE thread = GetCurrentThread();
 
-        while (StackWalk64(machineType, process, thread, &stackFrame, ctx, nullptr, 
+        while (StackWalk64(machineType, process, thread, &stackFrame, ctx, nullptr,
                            CustomSymFunctionTableAccess64, CustomSymGetModuleBase64, nullptr)) {
             if (stackFrame.AddrPC.Offset == 0) {
                 break;
@@ -630,21 +650,21 @@ namespace analyzer {
 
     bool Analyzer::isGraphicsDriverCrash() {
         const std::array<std::string, 7> graphicsDrivers = {
-            "nvoglv32.dll", // NVIDIA
-            "atioglxx.dll", // AMD
-            "ig9icd32.dll",  // Intel
+                "nvoglv32.dll", // NVIDIA
+                "atioglxx.dll", // AMD
+                "ig9icd32.dll",  // Intel
 
-            "nvoglv64.dll", // NVIDIA
-            "atig6pxx.dll", // AMD
-            "atio6axx.dll", // AMD
-            "ig9icd64.dll"  // Intel
+                "nvoglv64.dll", // NVIDIA
+                "atig6pxx.dll", // AMD
+                "atio6axx.dll", // AMD
+                "ig9icd64.dll"  // Intel
         };
 
         // check latest 3 stack frames
         auto trace = getStackTrace();
         for (int i = 0; i < 3 && i < trace.size(); i++) {
             auto &line = trace[i];
-            for (const auto &driver : graphicsDrivers) {
+            for (const auto &driver: graphicsDrivers) {
                 if (line.module.name.find(driver) != std::string::npos) {
                     return true;
                 }
