@@ -476,8 +476,9 @@ namespace analyzer {
 #else
         uintptr_t stackPointer = context.Rsp;
 #endif
-        constexpr size_t stackSize = 32;
-        for (int i = 0; i < stackSize; i++) {
+        constexpr int stackSize = -960;
+        constexpr int negativeStackSize = -1088;
+        for (int i = negativeStackSize; i < stackSize; i++) {
             uintptr_t address = stackPointer + i * sizeof(uintptr_t);
             if (!utils::mem::isAccessible(address)) {
                 geode::log::warn("Stack address 0x{:X} is not accessible", address);
