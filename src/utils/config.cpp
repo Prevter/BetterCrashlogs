@@ -12,7 +12,12 @@ namespace config {
 
     Config& get() {
         static bool loaded = false;
-        static Config instance = { 50, 50, 1280, 720, false, 1.f };
+        static Config instance = {
+            50, 50, 1280, 720,
+            false, 1.f, 0,
+            true, true, true,
+            true, true, true, true
+        };
         if (!loaded) {
             loaded = true;
             load();
@@ -44,6 +49,13 @@ namespace config {
             else if (key == "window_maximized") config.window_maximized = value == "true";
             else if (key == "ui_scale") config.ui_scale = std::stof(value);
             else if (key == "last_bindings_update") config.last_bindings_update = std::stoll(value);
+            else if (key == "show_info") config.show_info = value == "true";
+            else if (key == "show_meta") config.show_meta = value == "true";
+            else if (key == "show_registers") config.show_registers = value == "true";
+            else if (key == "show_mods") config.show_mods = value == "true";
+            else if (key == "show_stack") config.show_stack = value == "true";
+            else if (key == "show_stacktrace") config.show_stacktrace = value == "true";
+            else if (key == "show_disassembly") config.show_disassembly = value == "true";
         }
 
         file.close();
@@ -60,6 +72,13 @@ namespace config {
         file << "window_maximized=" << (config.window_maximized ? "true" : "false") << "\n";
         file << "ui_scale=" << config.ui_scale << "\n";
         file << "last_bindings_update=" << config.last_bindings_update << "\n";
+        file << "show_info=" << (config.show_info ? "true" : "false") << "\n";
+        file << "show_meta=" << (config.show_meta ? "true" : "false") << "\n";
+        file << "show_registers=" << (config.show_registers ? "true" : "false") << "\n";
+        file << "show_mods=" << (config.show_mods ? "true" : "false") << "\n";
+        file << "show_stack=" << (config.show_stack ? "true" : "false") << "\n";
+        file << "show_stacktrace=" << (config.show_stacktrace ? "true" : "false") << "\n";
+        file << "show_disassembly=" << (config.show_disassembly ? "true" : "false") << "\n";
 
         file.close();
     }

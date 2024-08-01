@@ -275,6 +275,16 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
                     ImGui::SetTooltip("Reset all widgets to their default positions.");
                 }
 
+#define TOGGLE(name, var) if (ImGui::MenuItem("Show " #name, nullptr, &cfg.show_##var)) { config::save(); }
+                TOGGLE(Information, info);
+                TOGGLE(Metadata, meta);
+                TOGGLE(Registers, registers);
+                TOGGLE(Mods, mods);
+                TOGGLE(Stack, stack);
+                TOGGLE(StackTrace, stacktrace);
+                TOGGLE(Disassembly, disassembly);
+#undef TOGGLE
+
                 ImGui::EndMenu();
             }
 
@@ -282,13 +292,13 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         }
 
         // Windows
-        ui::informationWindow(analyzer);
-        ui::metadataWindow();
-        ui::registersWindow(analyzer);
-        ui::modsWindow();
-        ui::stackWindow(analyzer);
-        ui::stackTraceWindow(analyzer);
-        ui::disassemblyWindow(analyzer);
+        if (cfg.show_info) ui::informationWindow(analyzer);
+        if (cfg.show_meta) ui::metadataWindow();
+        if (cfg.show_registers) ui::registersWindow(analyzer);
+        if (cfg.show_mods) ui::modsWindow();
+        if (cfg.show_stack) ui::stackWindow(analyzer);
+        if (cfg.show_stacktrace) ui::stackTraceWindow(analyzer);
+        if (cfg.show_disassembly) ui::disassemblyWindow(analyzer);
 
         // Close the window if the user requested it
         if (shouldClose) {
