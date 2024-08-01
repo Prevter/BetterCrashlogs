@@ -1,3 +1,16 @@
+## v1.6.0
+- Added "Intrusive Mode" to catch more crashes (experimental)
+- Fixed a crash when reading registers
+- Small fix for "Stack Allocations"
+- TulipHook handlers now have a name
+- Fixed few UI bugs
+- Fixed function addresses that are out-of-bounds
+- Added toasts for some actions
+- You can now disable some windows in "Settings" submenu
+- XMM registers can now read strings
+- Disabled warnings for outdated mods
+- Bumped Geode version to 3.2.0
+
 ## v1.5.0
 - Fixed few false positive crashes
 - Fixed bindings fetching
