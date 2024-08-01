@@ -36,6 +36,11 @@ namespace utils::geode {
         std::string result;
 
         for (auto &problem: problems) {
+            if (problem.type == ::geode::LoadProblem::Type::UnsupportedGeodeVersion ||
+                problem.type == ::geode::LoadProblem::Type::NeedsNewerGeodeVersion ||
+                problem.type == ::geode::LoadProblem::Type::UnsupportedVersion) {
+                continue; // We don't need to show these problems
+            }
             std::variant<std::filesystem::path, ::geode::ModMetadata, ::geode::Mod *> cause = problem.cause;
             auto type = problemTypeToString(problem.type);
             std::string message = problem.message;
