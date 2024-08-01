@@ -557,4 +557,61 @@ namespace ui {
         ImGui::End();
     }
 
+    struct ToastMessage {
+        std::string message;
+        float duration;
+        float time;
+    };
+
+    std::vector<ToastMessage> toastMessages;
+
+    void showToast(const std::string& message, float duration) {
+        toastMessages.emplace_back(message, duration, 0);
+    }
+
+    void renderToasts() {
+        float dt = ImGui::GetIO().DeltaTime;
+        int i = 0;
+        for (auto it = toastMessages.begin(); it != toastMessages.end(); i++) {
+            auto &toast = *it;
+            toast.time += dt;
+            if (toast.time >= toast.duration) {
+                it = toastMessages.erase(it);
+            } else {
+                auto labelSize = ImGui::CalcTextSize(toast.message.c_str());
+                auto padding = 4.f;
+                auto bottomMargin = 64.f;
+                // place it in bottom center, slightly above the bottom
+                auto pos = ImVec2((ImGui::GetIO().DisplaySize.x - labelSize.x) / 2, ImGui::GetIO().DisplaySize.y - labelSize.y - bottomMargin);
+                ImGui::SetNextWindowPos(pos);
+                ImGui::SetNextWindowBgAlpha(0.7f);
+
+                ImGui::PushStyleColor(ImGuiCol_Text, colorMap["white"]);
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(0, 0, 0, 128));
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.f);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(padding, padding));
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.f);
+                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+
+                if (ImGui::Begin(fmt::format("Toast {}", i).c_str(), nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                                                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+                                                ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize |
+                                                ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav)) {
+                    ImGui::Text("%s", toast.message.c_str());
+
+                    if (ImGui::IsWindowHovered()) {
+                        toast.time = 0;
+                    }
+                }
+                ImGui::End();
+
+                ImGui::PopStyleVar(5);
+                ImGui::PopStyleColor(2);
+
+                ++it;
+            }
+        }
+    }
+
 }

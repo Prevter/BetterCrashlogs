@@ -164,15 +164,19 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         ui::applyStyles();
         ui::resize();
     }, [&]() {
+        auto& cfg = config::get();
+
         // Top-bar
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::MenuItem("Copy Crashlog")) {
                 ImGui::SetClipboardText(crashReport.c_str());
+                ui::showToast("Copied crash information to clipboard.");
             }
 
             if (ImGui::MenuItem("Open Crashlogs Folder")) {
                 ShellExecuteW(nullptr, L"open", L"explorer.exe", (L"/select," + crashReportPath.wstring()).c_str(),
                               nullptr, SW_SHOWNORMAL);
+                ui::showToast(fmt::format("Opened {} in explorer", crashReportPath.string()));
             }
 
             if (ImGui::MenuItem("Restart Game")) {
@@ -189,6 +193,7 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
 
             if (ImGui::MenuItem("Reload Analyzer")) {
                 analyzer.reload();
+                ui::showToast("Analyzer reloaded.");
             }
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("Refresh the crash information (reload all debug symbols).");
@@ -260,8 +265,6 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
 
             // Settings menu
             if (ImGui::BeginMenu("Settings")) {
-                auto& cfg = config::get();
-
                 // Font scale
                 if (ImGui::DragFloat("Font Scale", &cfg.ui_scale, 0.01f, 0.5f, 2.0f)) {
                     config::save();
@@ -270,6 +273,7 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
 
                 if (ImGui::MenuItem("Reset Layout")) {
                     resetLayout(&window);
+                    ui::showToast("Reset layout to default.");
                 }
                 if (ImGui::IsItemHovered()) {
                     ImGui::SetTooltip("Reset all widgets to their default positions.");
@@ -291,6 +295,11 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
             ImGui::EndMainMenuBar();
         }
 
+        if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_C)) {
+            ImGui::SetClipboardText(crashReport.c_str());
+            ui::showToast("Copied crash information to clipboard.");
+        }
+
         // Windows
         if (cfg.show_info) ui::informationWindow(analyzer);
         if (cfg.show_meta) ui::metadataWindow();
@@ -299,6 +308,8 @@ LONG WINAPI HandleCrash(LPEXCEPTION_POINTERS ExceptionInfo) {
         if (cfg.show_stack) ui::stackWindow(analyzer);
         if (cfg.show_stacktrace) ui::stackTraceWindow(analyzer);
         if (cfg.show_disassembly) ui::disassemblyWindow(analyzer);
+
+        ui::renderToasts();
 
         // Close the window if the user requested it
         if (shouldClose) {

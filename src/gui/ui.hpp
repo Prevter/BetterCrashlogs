@@ -77,4 +77,10 @@ namespace ui {
     /// @brief Contains disassembled code around the exception
     void disassemblyWindow(analyzer::Analyzer& analyzer);
 
+    /// @brief Create a toast message that will be displayed on the screen for a short period of time
+    void showToast(const std::string& message, float duration = 3.f);
+
+    /// @brief Render the toast messages
+    void renderToasts();
+
 }
