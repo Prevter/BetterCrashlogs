@@ -1,3 +1,6 @@
+## v1.6.1
+- Wine users can now see cocos2d symbols
+
 ## v1.6.0
 - Added "Intrusive Mode" to catch more crashes (experimental)
 - Fixed a crash when reading registers

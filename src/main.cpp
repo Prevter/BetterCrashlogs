@@ -367,16 +367,22 @@ LONG WINAPI ExceptionHandler(LPEXCEPTION_POINTERS info) {
     }
 }
 
-inline std::string getBindingsUrl() {
-    return fmt::format(
-        "https://prevter.github.io/bindings-meta/{}-{}{}.txt",
-        GEODE_MACOS("MacOS")
-        GEODE_WINDOWS64("Win64")
-        GEODE_WINDOWS32("Win32"),
-        utils::geode::getGameVersion(),
-        GEODE_WINDOWS("")
-        GEODE_ARM_MAC("-Arm")
-        GEODE_INTEL_MAC("-Intel")
+static void updateFile(const std::string& filename) {
+    auto req = geode::utils::web::WebRequest();
+    req.get(utils::geode::formatFileURL(filename)).listen(
+        [filename](auto res) {
+            if (!res) return;
+            auto data = res->string().unwrapOr("");
+            if (data.empty()) return;
+
+            auto path = utils::geode::getConfigPath() / filename;
+            std::ofstream file(path);
+            file << data;
+            file.close();
+
+            geode::log::info("Successfully downloaded {} to {}", filename, path.string());
+        },
+        [](auto){}, []{}
     );
 }
 
@@ -389,32 +395,22 @@ $execute {
         std::filesystem::copy(resourcesDir / "imgui.ini", iniPath);
     }
 
-    s_listener.bind([] (::geode::utils::web::WebTask::Event* e) {
-        if (::geode::utils::web::WebResponse* res = e->getValue()) {
-            // Check if the request was successful
-            auto data = res->string().unwrapOr("");
-            if (data.empty()) return;
-
-            // Save the codegen file
-            auto path = utils::geode::getConfigPath() / fmt::format("codegen-{}.txt", utils::geode::getGameVersion());
-            std::ofstream file(path);
-            file << data;
-            file.close();
-
-            geode::log::info("Successfully fetched codegen file for version {}", utils::geode::getGameVersion());
-        }
-    });
+    // Check if have libcocos2d.txt file
+    auto cocosPath = configDir / utils::geode::getCocosFile();
+    if (!std::filesystem::exists(cocosPath)) {
+        geode::log::info("Fetching libcocos2d symbols...");
+        updateFile(utils::geode::getCocosFile());
+    }
 
     // Fetch codegen file once every 4 hours
     auto& config = config::get();
     auto lastUpdate = config.last_bindings_update;
-    auto codegenPath = configDir / fmt::format("codegen-{}.txt", utils::geode::getGameVersion());
+    auto codegenPath = configDir / utils::geode::getBindingsFile();
     if (lastUpdate + 14400 < time(nullptr) || !std::filesystem::exists(codegenPath)) {
         config.last_bindings_update = time(nullptr);
         config::save();
-        geode::log::info("Fetching codegen file...");
-        auto req = geode::utils::web::WebRequest();
-        s_listener.setFilter(req.get(getBindingsUrl()));
+        geode::log::info("Fetching codegen symbols...");
+        updateFile(utils::geode::getBindingsFile());
     }
 
     geode::log::info("Setting up crash handler...");

@@ -240,10 +240,11 @@ namespace analyzer {
         }
         continueCheck:
 
-        // Check if it's the main module
-        if (module == GetModuleHandle(nullptr)) {
+        bool isMainModule = module == GetModuleHandle(nullptr);
+        bool isCocosModule = moduleName == "libcocos2d.dll";
+        if (isMainModule || isCocosModule) {
             // Look up the function name in the CodegenData.txt file
-            auto methodInfo = utils::geode::getFunctionAddress(address, (uintptr_t) module);
+            auto methodInfo = utils::geode::getFunctionAddress(address, (uintptr_t) module, isCocosModule);
             if (methodInfo.first != 0) {
                 auto methodOffset = moduleOffset - methodInfo.first;
                 auto methodName = methodInfo.second;

@@ -235,18 +235,13 @@ namespace utils::geode {
         return message;
     }
 
-    const std::unordered_map<uintptr_t, std::string>& getFunctionAddresses() {
-        static std::unordered_map<uintptr_t, std::string> functions;
-        if (!functions.empty()) {
+    std::unordered_map<uintptr_t, std::string> readAddressesFrom(const std::filesystem::path &path) {
+        std::unordered_map<uintptr_t, std::string> functions;
+        if (!std::filesystem::exists(path)) {
             return functions;
         }
 
-        auto codegenPath = getConfigPath() / fmt::format("codegen-{}.txt", getGameVersion());
-        if (!std::filesystem::exists(codegenPath)) {
-            return functions;
-        }
-
-        std::ifstream file(codegenPath);
+        std::ifstream file(path);
         if (!file.is_open()) {
             return functions;
         }
@@ -264,13 +259,35 @@ namespace utils::geode {
         return functions;
     }
 
-    std::pair<uintptr_t, std::string> getFunctionAddress(uintptr_t address, uintptr_t moduleBase) {
+    const std::unordered_map<uintptr_t, std::string>& getFunctionAddresses() {
+        static std::unordered_map<uintptr_t, std::string> functions;
+        if (!functions.empty()) {
+            return functions;
+        }
+
+        auto codegenPath = getConfigPath() / getBindingsFile();
+        functions = readAddressesFrom(codegenPath);
+        return functions;
+    }
+
+    const std::unordered_map<uintptr_t, std::string>& getCocosFunctionAddresses() {
+        static std::unordered_map<uintptr_t, std::string> functions;
+        if (!functions.empty()) {
+            return functions;
+        }
+
+        auto codegenPath = getConfigPath() / getCocosFile();
+        functions = readAddressesFrom(codegenPath);
+        return functions;
+    }
+
+    std::pair<uintptr_t, std::string> getFunctionAddress(uintptr_t address, uintptr_t moduleBase, bool useCocos) {
         auto methodStart = mem::findMethodStart(address);
         if (methodStart == 0) return {0, ""}; // Outside the 0x1000 offset
 
         methodStart -= moduleBase; // Get the relative address
 
-        auto functions = getFunctionAddresses();
+        auto functions = useCocos ? getCocosFunctionAddresses() : getFunctionAddresses();
         auto it = functions.find(methodStart);
         if (it == functions.end()) {
             // Check if function was not aligned using "int 3"
