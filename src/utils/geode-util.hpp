@@ -51,7 +51,8 @@ namespace utils::geode {
         IsCurrentlyLoading, // 'o'
         Enabled, // 'x'
         HasProblems, // '!'
-        ShouldLoad, // '~'
+        ShouldLoad, // '~',
+        Outdated, // '*'
     };
 
     struct ModInfo {

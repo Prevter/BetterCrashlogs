@@ -1,7 +1,7 @@
 {
-	"geode": "3.2.0",
+	"geode": "4.0.0-alpha.1",
 	"gd": { "win": "*" },
-	"version": "v1.6.0",
+	"version": "v1.6.1-beta.1",
 	"id": "prevter.bettercrash",
 	"name": "BetterCrashlogs",
 	"developer": "Prevter",

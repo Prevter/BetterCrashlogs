@@ -87,7 +87,7 @@ namespace utils::geode {
         char wd[MAX_PATH];
         GetCurrentDirectoryA(MAX_PATH, wd);
 
-        auto problems = ::geode::Loader::get()->getProblems();
+        auto problems = ::geode::Loader::get()->getAllProblems();
 
         message = fmt::format(
                 "- Working Directory: {}\n{}"
@@ -172,12 +172,12 @@ namespace utils::geode {
                 }
             }
 
-            ModStatus status = ModStatus::Disabled;
+            auto status = ModStatus::Disabled;
             if (mod->isCurrentlyLoading()) {
                 status = ModStatus::IsCurrentlyLoading;
             } else if (mod->isEnabled()) {
                 status = ModStatus::Enabled;
-            } else if (mod->hasProblems()) {
+            } else if (mod->hasLoadProblems()) {
                 status = ModStatus::HasProblems;
             } else if (mod->shouldLoad()) {
                 status = ModStatus::ShouldLoad;
@@ -222,6 +222,9 @@ namespace utils::geode {
                     break;
                 case ModStatus::ShouldLoad:
                     status = '~';
+                    break;
+                case ModStatus::Outdated:
+                    status = '*';
                     break;
             }
             result += fmt::format("{} | [{}] {}\n", status, mod.version, mod.id);
