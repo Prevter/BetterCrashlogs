@@ -17,7 +17,7 @@ namespace breakdown::utils {
     }
 
     inline std::string_view getWittyComment() {
-        return WITTY_COMMENTS[random(0ULL, WITTY_COMMENTS.size() - 1)];
+        return WITTY_COMMENTS[random<size_t>(0, WITTY_COMMENTS.size() - 1)];
     }
 
     std::string formatTime(std::chrono::time_point<std::chrono::system_clock> time, bool fileSafe = false);

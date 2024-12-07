@@ -7,7 +7,13 @@ $on_mod(Loaded) {
     breakdown::platform::registerCrashHandler([](auto const& crashHandler) {
         breakdown::g_crashHandler = const_cast<breakdown::CrashHandler*>(&crashHandler);
         geode::log::error("Geometry Dash crashed! Handling crash...");
-        wxEntry(); // wxEntry locks the thread, so g_crashHandler will be valid until the end of the program
+
+        // wxEntry locks the thread, so g_crashHandler will be valid until the end of the program
+        wxEntry(
+            // macOS doesn't have default arguments for wxEntry somehow
+            GEODE_MACOS(0, nullptr)
+        );
+
         breakdown::g_crashHandler = nullptr;
     });
 }
