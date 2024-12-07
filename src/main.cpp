@@ -12,7 +12,7 @@ $on_mod(Loaded) {
         GEODE_MACOS(int argc = 0;)
         wxEntry(
             // macOS doesn't have default arguments for wxEntry somehow
-            GEODE_MACOS(argc, nullptr)
+            GEODE_MACOS(argc, (char**)nullptr)
         );
 
         breakdown::g_crashHandler = nullptr;
