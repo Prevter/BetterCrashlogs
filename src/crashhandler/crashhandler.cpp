@@ -26,6 +26,10 @@ namespace breakdown {
                    mod->shouldLoad() ? Status::ShouldLoad : Status::Disabled;
     }
 
+    std::string GeodeInfo::ModInfo::toString() const {
+        return fmt::format("{} | [{}] {}", statusToChar(m_status), m_version, m_id);
+    }
+
     GeodeInfo::GeodeInfo() {
         m_workingDirectory = std::filesystem::current_path();
         auto loader = geode::Loader::get();
@@ -36,6 +40,26 @@ namespace breakdown {
         m_mods = loader->getAllMods()
                  | std::views::transform([](geode::Mod* mod) { return ModInfo(mod); })
                  | std::ranges::to<std::vector<ModInfo>>();
+    }
+
+    size_t GeodeInfo::getEnabledModCount() const {
+        return std::ranges::count_if(m_mods, [](ModInfo const& mod) {
+            return mod.getMod()->shouldLoad();
+        });
+    }
+
+    size_t GeodeInfo::getLoadedModCount() const {
+        return std::ranges::count_if(m_mods, [](ModInfo const& mod) {
+            return mod.getMod()->isEnabled();
+        });
+    }
+
+    size_t GeodeInfo::getOutdatedModCount() {
+        return geode::Loader::get()->getOutdated().size();
+    }
+
+    size_t GeodeInfo::getProblemCount() {
+        return geode::Loader::get()->getLoadProblems().size();
     }
 
     std::string GeodeInfo::toString() const {

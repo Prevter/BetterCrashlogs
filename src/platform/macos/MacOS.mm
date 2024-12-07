@@ -1,11 +1,15 @@
 #if defined(__APPLE__) || defined(__MACH__)
 #include "MacOS.hpp"
 
+#include <array>
+#include <thread>
+#include <filesystem>
 #include <mutex>
 #include <functional>
 #include <execinfo.h>
 #include <dlfcn.h>
 #include <cxxabi.h>
+#include <algorithm>
 
 #include <mach-o/dyld_images.h>
 #include <mach-o/dyld.h>
@@ -31,7 +35,7 @@ namespace breakdown::platform {
             case SIGSEGV: return "SIGSEGV: Segmentation Fault";
             case SIGINT: return "SIGINT: Interactive attention signal, (usually ctrl+c)";
             case SIGFPE:
-                switch(s_siginfo->si_code) {
+                switch(s_signalInfo->si_code) {
                     case FPE_INTDIV: return "SIGFPE: (integer divide by zero)";
                     case FPE_INTOVF: return "SIGFPE: (integer overflow)";
                     case FPE_FLTDIV: return "SIGFPE: (floating-point divide by zero)";
@@ -43,7 +47,7 @@ namespace breakdown::platform {
                     default: return "SIGFPE: Arithmetic Exception";
                 }
             case SIGILL:
-                switch(s_siginfo->si_code) {
+                switch(s_signalInfo->si_code) {
                     case ILL_ILLOPC: return "SIGILL: (illegal opcode)";
                     case ILL_ILLOPN: return "SIGILL: (illegal operand)";
                     case ILL_ILLADR: return "SIGILL: (illegal addressing mode)";
@@ -63,7 +67,7 @@ namespace breakdown::platform {
 
     extern "C" void handleCrash(int signal, siginfo_t* signalInfo, void* vcontext) {
         auto* context = static_cast<ucontext_t*>(vcontext);
-        s_backtraceSize = backtrace(s_backtrace, FRAME_SIZE);
+        s_backtraceSize = backtrace(s_backtrace.data(), FRAME_SIZE);
 
         #ifdef GEODE_IS_INTEL_MAC
         s_backtrace[2] = reinterpret_cast<void*>(context->uc_mcontext->__ss.__rip);
@@ -100,7 +104,7 @@ namespace breakdown::platform {
 
         auto addr = reinterpret_cast<uintptr_t>(signalAddr);
         ExceptionInfo exceptionInfo {
-            addr, s_signal, std::string(getSignalCodeString())
+            addr, static_cast<size_t>(s_signal), std::string(getSignalCodeString())
         };
 
         s_crashHandler(CrashHandler(info));

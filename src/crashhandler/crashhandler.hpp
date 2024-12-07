@@ -1,5 +1,13 @@
 #pragma once
 
+#include <Geode/Geode.hpp>
+#include <chrono>
+#include <filesystem>
+#include <string>
+#include <thread>
+#include <vector>
+#include <ranges>
+
 #include "../utils/utils.hpp"
 
 namespace breakdown {
@@ -37,9 +45,7 @@ public:
         std::string_view getVersion() const { return m_version; }
         Status getStatus() const { return m_status; }
 
-        std::string toString() const {
-            return fmt::format("{} | [{}] {}", statusToChar(m_status), m_version, m_id);
-        }
+        std::string toString() const;
 
     private:
         geode::Mod* m_mod;
@@ -59,19 +65,10 @@ public:
     std::vector<ModInfo> const& getMods() const { return m_mods; }
 
     size_t getModCount() const { return m_mods.size(); }
-    size_t getEnabledModCount() const {
-        return std::ranges::count_if(m_mods, [](ModInfo const& mod) {
-            return mod.getMod()->shouldLoad();
-        });
-    }
-    size_t getLoadedModCount() const {
-        return std::ranges::count_if(m_mods, [](ModInfo const& mod) {
-            return mod.getMod()->isEnabled();
-        });
-    }
-
-    static size_t getOutdatedModCount() { return geode::Loader::get()->getOutdated().size(); }
-    static size_t getProblemCount() { return geode::Loader::get()->getLoadProblems().size(); }
+    size_t getEnabledModCount() const;
+    size_t getLoadedModCount() const;
+    static size_t getOutdatedModCount();
+    static size_t getProblemCount();
 
     std::string toString() const;
     std::string modListToString() const;
