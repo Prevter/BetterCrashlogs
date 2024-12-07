@@ -9,9 +9,10 @@ $on_mod(Loaded) {
         geode::log::error("Geometry Dash crashed! Handling crash...");
 
         // wxEntry locks the thread, so g_crashHandler will be valid until the end of the program
+        GEODE_MACOS(int argc = 0;)
         wxEntry(
             // macOS doesn't have default arguments for wxEntry somehow
-            GEODE_MACOS(0, nullptr)
+            GEODE_MACOS(argc, nullptr)
         );
 
         breakdown::g_crashHandler = nullptr;
