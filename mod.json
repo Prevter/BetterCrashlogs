@@ -1,0 +1,12 @@
+{
+	"geode": "4.0.1",
+	"gd": {
+		"win": "*",
+		"mac": "*"
+	},
+	"id": "prevter.bettercrash",
+	"name": "Breakdown",
+	"version": "v2.0.0",
+	"developer": "prevter",
+	"description": "Giving you more information after crashes."
+}
