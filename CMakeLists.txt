@@ -27,7 +27,8 @@ endif()
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 # wxWidgets
-CPMAddPackage("gh:wxWidgets/wxWidgets@3.2.6")
+set(wxBUILD_CXX_STANDARD 20) # wxWidgets doesn't support C++23 yet
+CPMAddPackage("gh:wxWidgets/wxWidgets#d78b464")
 target_link_libraries(${PROJECT_NAME} wx::core wx::base)
 
 setup_geode_mod(${PROJECT_NAME})
