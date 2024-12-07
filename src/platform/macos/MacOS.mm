@@ -107,7 +107,7 @@ namespace breakdown::platform {
             addr, static_cast<size_t>(s_signal), std::string(getSignalCodeString())
         };
 
-        s_crashHandler(CrashHandler(info));
+        s_crashHandler(CrashHandler(exceptionInfo));
 
         s_signal = 0;
         s_cv.notify_all();
